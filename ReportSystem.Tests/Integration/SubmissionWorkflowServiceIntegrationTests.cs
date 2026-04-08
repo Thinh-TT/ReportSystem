@@ -83,6 +83,9 @@ public class SubmissionWorkflowServiceIntegrationTests
         Assert.Equal(SubmissionStatuses.Approved, approved.Status);
         Assert.Equal(SubmissionAutoResults.Pass, approved.ManagerResult);
         Assert.NotNull(approved.ApprovedAt);
+        Assert.Contains(approved.Logs, x => x.Action == ApprovalActions.Submit);
+        Assert.Contains(approved.Logs, x => x.Action == ApprovalActions.AutoEvaluate);
+        Assert.Contains(approved.Logs, x => x.Action == ApprovalActions.Approve);
 
         var actions = await dbContext.ApprovalLogs
             .Where(x => x.SubmissionId == draft.SubmissionId)
@@ -170,5 +173,27 @@ public class SubmissionWorkflowServiceIntegrationTests
 
         Assert.Equal(SubmissionStatuses.Rejected, rejected.Status);
         Assert.Equal(SubmissionAutoResults.Fail, rejected.ManagerResult);
+
+        var reopened = await workflowService.ReopenAsync(new ReopenSubmissionRequest
+        {
+            SubmissionId = rejected.SubmissionId,
+            ActionByUserId = adminUserId,
+            Reason = "Need retest after correction"
+        });
+
+        Assert.Equal(SubmissionStatuses.Draft, reopened.Status);
+        Assert.Equal(SubmissionAutoResults.Pending, reopened.AutoResult);
+        Assert.Equal(SubmissionAutoResults.Pending, reopened.ManagerResult);
+        Assert.Contains(reopened.Logs, x => x.Action == ApprovalActions.Reopen);
+
+        var sourceFieldValues = await dbContext.ReportFieldValues
+            .Where(x => x.SubmissionId == rejected.SubmissionId)
+            .ToListAsync();
+
+        var reopenedFieldValues = await dbContext.ReportFieldValues
+            .Where(x => x.SubmissionId == reopened.SubmissionId)
+            .ToListAsync();
+
+        Assert.Equal(sourceFieldValues.Count, reopenedFieldValues.Count);
     }
 }

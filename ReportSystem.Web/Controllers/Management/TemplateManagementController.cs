@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ReportSystem.Application.Services.Templates;
+using ReportSystem.Application.Services.Workflow;
 using ReportSystem.Domain.Entities;
 using ReportSystem.Infrastructure.Data;
 
@@ -10,10 +12,14 @@ namespace ReportSystem.Web.Controllers.Management;
 public sealed class TemplateManagementController : ControllerBase
 {
     private readonly ReportSystemDbContext _dbContext;
+    private readonly ITemplateWorkflowService _templateWorkflowService;
 
-    public TemplateManagementController(ReportSystemDbContext dbContext)
+    public TemplateManagementController(
+        ReportSystemDbContext dbContext,
+        ITemplateWorkflowService templateWorkflowService)
     {
         _dbContext = dbContext;
+        _templateWorkflowService = templateWorkflowService;
     }
 
     [HttpGet("report-templates")]
@@ -40,26 +46,24 @@ public sealed class TemplateManagementController : ControllerBase
     [HttpPost("report-templates")]
     public async Task<IActionResult> CreateTemplate([FromBody] ReportTemplateUpsertRequest request, CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
-
-        var template = new ReportTemplate
+        try
         {
-            TemplateCode = request.TemplateCode.Trim(),
-            TemplateName = request.TemplateName.Trim(),
-            Description = request.Description?.Trim(),
-            IsActive = request.IsActive,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow
-        };
+            var created = await _templateWorkflowService.CreateTemplateAsync(
+                new CreateTemplateWorkflowRequest
+                {
+                    TemplateCode = request.TemplateCode,
+                    TemplateName = request.TemplateName,
+                    Description = request.Description,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
 
-        _dbContext.ReportTemplates.Add(template);
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
-        {
-            return saveError;
+            return CreatedAtAction(nameof(GetTemplate), new { id = created.Id }, MapTemplate(created));
         }
-
-        return CreatedAtAction(nameof(GetTemplate), new { id = template.Id }, MapTemplate(template));
+        catch (WorkflowRuleViolationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPut("report-templates/{id:long}")]
@@ -68,25 +72,29 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] ReportTemplateUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var template = await _dbContext.ReportTemplates.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (template is null)
+        try
+        {
+            var updated = await _templateWorkflowService.UpdateTemplateAsync(
+                id,
+                new UpdateTemplateWorkflowRequest
+                {
+                    TemplateCode = request.TemplateCode,
+                    TemplateName = request.TemplateName,
+                    Description = request.Description,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
+
+            return Ok(MapTemplate(updated));
+        }
+        catch (WorkflowNotFoundException)
         {
             return NotFound();
         }
-
-        template.TemplateCode = request.TemplateCode.Trim();
-        template.TemplateName = request.TemplateName.Trim();
-        template.Description = request.Description?.Trim();
-        template.IsActive = request.IsActive;
-        template.UpdatedAt = DateTime.UtcNow;
-
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
+        catch (WorkflowRuleViolationException ex)
         {
-            return saveError;
+            return Conflict(new { message = ex.Message });
         }
-
-        return Ok(MapTemplate(template));
     }
 
     [HttpDelete("report-templates/{id:long}")]
@@ -135,29 +143,27 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] ReportTemplateVersionUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
-
-        var version = new ReportTemplateVersion
+        try
         {
-            TemplateId = request.TemplateId,
-            VersionNo = request.VersionNo,
-            Status = request.Status.Trim(),
-            EffectiveFrom = ToUtc(request.EffectiveFrom),
-            EffectiveTo = ToUtc(request.EffectiveTo),
-            PublishedBy = request.PublishedBy,
-            PublishedAt = ToUtc(request.PublishedAt),
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow
-        };
+            var created = await _templateWorkflowService.CreateVersionAsync(
+                new CreateTemplateVersionWorkflowRequest
+                {
+                    TemplateId = request.TemplateId,
+                    VersionNo = request.VersionNo,
+                    Status = request.Status,
+                    EffectiveFrom = request.EffectiveFrom,
+                    EffectiveTo = request.EffectiveTo,
+                    PublishedBy = request.PublishedBy,
+                    PublishedAt = request.PublishedAt
+                },
+                cancellationToken);
 
-        _dbContext.ReportTemplateVersions.Add(version);
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
-        {
-            return saveError;
+            return CreatedAtAction(nameof(GetTemplateVersion), new { id = created.Id }, MapTemplateVersion(created));
         }
-
-        return CreatedAtAction(nameof(GetTemplateVersion), new { id = version.Id }, MapTemplateVersion(version));
+        catch (WorkflowRuleViolationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPut("report-template-versions/{id:long}")]
@@ -166,28 +172,32 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] ReportTemplateVersionUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var version = await _dbContext.ReportTemplateVersions.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (version is null)
+        try
+        {
+            var updated = await _templateWorkflowService.UpdateVersionAsync(
+                id,
+                new UpdateTemplateVersionWorkflowRequest
+                {
+                    TemplateId = request.TemplateId,
+                    VersionNo = request.VersionNo,
+                    Status = request.Status,
+                    EffectiveFrom = request.EffectiveFrom,
+                    EffectiveTo = request.EffectiveTo,
+                    PublishedBy = request.PublishedBy,
+                    PublishedAt = request.PublishedAt
+                },
+                cancellationToken);
+
+            return Ok(MapTemplateVersion(updated));
+        }
+        catch (WorkflowNotFoundException)
         {
             return NotFound();
         }
-
-        version.TemplateId = request.TemplateId;
-        version.VersionNo = request.VersionNo;
-        version.Status = request.Status.Trim();
-        version.EffectiveFrom = ToUtc(request.EffectiveFrom);
-        version.EffectiveTo = ToUtc(request.EffectiveTo);
-        version.PublishedBy = request.PublishedBy;
-        version.PublishedAt = ToUtc(request.PublishedAt);
-        version.UpdatedAt = DateTime.UtcNow;
-
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
+        catch (WorkflowRuleViolationException ex)
         {
-            return saveError;
+            return Conflict(new { message = ex.Message });
         }
-
-        return Ok(MapTemplateVersion(version));
     }
 
     [HttpDelete("report-template-versions/{id:long}")]
@@ -236,32 +246,30 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] TemplateFieldUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
-
-        var field = new TemplateField
+        try
         {
-            TemplateVersionId = request.TemplateVersionId,
-            FieldCode = request.FieldCode.Trim(),
-            FieldLabel = request.FieldLabel.Trim(),
-            DataType = request.DataType.Trim(),
-            Unit = request.Unit?.Trim(),
-            IsRequired = request.IsRequired,
-            DisplayOrder = request.DisplayOrder,
-            Placeholder = request.Placeholder?.Trim(),
-            OptionsJson = request.OptionsJson,
-            IsActive = request.IsActive,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow
-        };
+            var created = await _templateWorkflowService.CreateFieldAsync(
+                new CreateTemplateFieldWorkflowRequest
+                {
+                    TemplateVersionId = request.TemplateVersionId,
+                    FieldCode = request.FieldCode,
+                    FieldLabel = request.FieldLabel,
+                    DataType = request.DataType,
+                    Unit = request.Unit,
+                    IsRequired = request.IsRequired,
+                    DisplayOrder = request.DisplayOrder,
+                    Placeholder = request.Placeholder,
+                    OptionsJson = request.OptionsJson,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
 
-        _dbContext.TemplateFields.Add(field);
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
-        {
-            return saveError;
+            return CreatedAtAction(nameof(GetTemplateField), new { id = created.Id }, MapTemplateField(created));
         }
-
-        return CreatedAtAction(nameof(GetTemplateField), new { id = field.Id }, MapTemplateField(field));
+        catch (WorkflowRuleViolationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPut("template-fields/{id:long}")]
@@ -270,31 +278,35 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] TemplateFieldUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var field = await _dbContext.TemplateFields.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (field is null)
+        try
+        {
+            var updated = await _templateWorkflowService.UpdateFieldAsync(
+                id,
+                new UpdateTemplateFieldWorkflowRequest
+                {
+                    TemplateVersionId = request.TemplateVersionId,
+                    FieldCode = request.FieldCode,
+                    FieldLabel = request.FieldLabel,
+                    DataType = request.DataType,
+                    Unit = request.Unit,
+                    IsRequired = request.IsRequired,
+                    DisplayOrder = request.DisplayOrder,
+                    Placeholder = request.Placeholder,
+                    OptionsJson = request.OptionsJson,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
+
+            return Ok(MapTemplateField(updated));
+        }
+        catch (WorkflowNotFoundException)
         {
             return NotFound();
         }
-
-        field.TemplateVersionId = request.TemplateVersionId;
-        field.FieldCode = request.FieldCode.Trim();
-        field.FieldLabel = request.FieldLabel.Trim();
-        field.DataType = request.DataType.Trim();
-        field.Unit = request.Unit?.Trim();
-        field.IsRequired = request.IsRequired;
-        field.DisplayOrder = request.DisplayOrder;
-        field.Placeholder = request.Placeholder?.Trim();
-        field.OptionsJson = request.OptionsJson;
-        field.IsActive = request.IsActive;
-        field.UpdatedAt = DateTime.UtcNow;
-
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
+        catch (WorkflowRuleViolationException ex)
         {
-            return saveError;
+            return Conflict(new { message = ex.Message });
         }
-
-        return Ok(MapTemplateField(field));
     }
 
     [HttpDelete("template-fields/{id:long}")]
@@ -343,32 +355,30 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] FieldRuleUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
-
-        var rule = new FieldRule
+        try
         {
-            FieldId = request.FieldId,
-            RuleOrder = request.RuleOrder,
-            RuleType = request.RuleType.Trim(),
-            MinValue = request.MinValue,
-            MaxValue = request.MaxValue,
-            ThresholdValue = request.ThresholdValue,
-            ExpectedText = request.ExpectedText?.Trim(),
-            Severity = request.Severity.Trim(),
-            FailMessage = request.FailMessage?.Trim(),
-            IsActive = request.IsActive,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow
-        };
+            var created = await _templateWorkflowService.CreateRuleAsync(
+                new CreateFieldRuleWorkflowRequest
+                {
+                    FieldId = request.FieldId,
+                    RuleOrder = request.RuleOrder,
+                    RuleType = request.RuleType,
+                    MinValue = request.MinValue,
+                    MaxValue = request.MaxValue,
+                    ThresholdValue = request.ThresholdValue,
+                    ExpectedText = request.ExpectedText,
+                    Severity = request.Severity,
+                    FailMessage = request.FailMessage,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
 
-        _dbContext.FieldRules.Add(rule);
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
-        {
-            return saveError;
+            return CreatedAtAction(nameof(GetFieldRule), new { id = created.Id }, MapFieldRule(created));
         }
-
-        return CreatedAtAction(nameof(GetFieldRule), new { id = rule.Id }, MapFieldRule(rule));
+        catch (WorkflowRuleViolationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPut("field-rules/{id:long}")]
@@ -377,31 +387,35 @@ public sealed class TemplateManagementController : ControllerBase
         [FromBody] FieldRuleUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var rule = await _dbContext.FieldRules.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (rule is null)
+        try
+        {
+            var updated = await _templateWorkflowService.UpdateRuleAsync(
+                id,
+                new UpdateFieldRuleWorkflowRequest
+                {
+                    FieldId = request.FieldId,
+                    RuleOrder = request.RuleOrder,
+                    RuleType = request.RuleType,
+                    MinValue = request.MinValue,
+                    MaxValue = request.MaxValue,
+                    ThresholdValue = request.ThresholdValue,
+                    ExpectedText = request.ExpectedText,
+                    Severity = request.Severity,
+                    FailMessage = request.FailMessage,
+                    IsActive = request.IsActive
+                },
+                cancellationToken);
+
+            return Ok(MapFieldRule(updated));
+        }
+        catch (WorkflowNotFoundException)
         {
             return NotFound();
         }
-
-        rule.FieldId = request.FieldId;
-        rule.RuleOrder = request.RuleOrder;
-        rule.RuleType = request.RuleType.Trim();
-        rule.MinValue = request.MinValue;
-        rule.MaxValue = request.MaxValue;
-        rule.ThresholdValue = request.ThresholdValue;
-        rule.ExpectedText = request.ExpectedText?.Trim();
-        rule.Severity = request.Severity.Trim();
-        rule.FailMessage = request.FailMessage?.Trim();
-        rule.IsActive = request.IsActive;
-        rule.UpdatedAt = DateTime.UtcNow;
-
-        var saveError = await TrySaveChangesAsync(cancellationToken);
-        if (saveError is not null)
+        catch (WorkflowRuleViolationException ex)
         {
-            return saveError;
+            return Conflict(new { message = ex.Message });
         }
-
-        return Ok(MapFieldRule(rule));
     }
 
     [HttpDelete("field-rules/{id:long}")]
@@ -440,18 +454,6 @@ public sealed class TemplateManagementController : ControllerBase
         }
     }
 
-    private static DateTime? ToUtc(DateTime? value)
-    {
-        if (!value.HasValue)
-        {
-            return null;
-        }
-
-        return value.Value.Kind == DateTimeKind.Utc
-            ? value.Value
-            : value.Value.ToUniversalTime();
-    }
-
     private static ReportTemplateResponse MapTemplate(ReportTemplate template)
     {
         return new ReportTemplateResponse(
@@ -464,7 +466,34 @@ public sealed class TemplateManagementController : ControllerBase
             template.UpdatedAt);
     }
 
+    private static ReportTemplateResponse MapTemplate(TemplateWorkflowTemplateResult template)
+    {
+        return new ReportTemplateResponse(
+            template.Id,
+            template.TemplateCode,
+            template.TemplateName,
+            template.Description,
+            template.IsActive,
+            template.CreatedAt,
+            template.UpdatedAt);
+    }
+
     private static ReportTemplateVersionResponse MapTemplateVersion(ReportTemplateVersion version)
+    {
+        return new ReportTemplateVersionResponse(
+            version.Id,
+            version.TemplateId,
+            version.VersionNo,
+            version.Status,
+            version.EffectiveFrom,
+            version.EffectiveTo,
+            version.PublishedBy,
+            version.PublishedAt,
+            version.CreatedAt,
+            version.UpdatedAt);
+    }
+
+    private static ReportTemplateVersionResponse MapTemplateVersion(TemplateWorkflowVersionResult version)
     {
         return new ReportTemplateVersionResponse(
             version.Id,
@@ -497,7 +526,43 @@ public sealed class TemplateManagementController : ControllerBase
             field.UpdatedAt);
     }
 
+    private static TemplateFieldResponse MapTemplateField(TemplateWorkflowFieldResult field)
+    {
+        return new TemplateFieldResponse(
+            field.Id,
+            field.TemplateVersionId,
+            field.FieldCode,
+            field.FieldLabel,
+            field.DataType,
+            field.Unit,
+            field.IsRequired,
+            field.DisplayOrder,
+            field.Placeholder,
+            field.OptionsJson,
+            field.IsActive,
+            field.CreatedAt,
+            field.UpdatedAt);
+    }
+
     private static FieldRuleResponse MapFieldRule(FieldRule rule)
+    {
+        return new FieldRuleResponse(
+            rule.Id,
+            rule.FieldId,
+            rule.RuleOrder,
+            rule.RuleType,
+            rule.MinValue,
+            rule.MaxValue,
+            rule.ThresholdValue,
+            rule.ExpectedText,
+            rule.Severity,
+            rule.FailMessage,
+            rule.IsActive,
+            rule.CreatedAt,
+            rule.UpdatedAt);
+    }
+
+    private static FieldRuleResponse MapFieldRule(TemplateWorkflowRuleResult rule)
     {
         return new FieldRuleResponse(
             rule.Id,

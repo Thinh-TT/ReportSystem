@@ -15,4 +15,6 @@ public interface ISubmissionWorkflowService
     Task<SubmissionWorkflowResult> ApproveAsync(ApproveSubmissionRequest request, CancellationToken cancellationToken = default);
 
     Task<SubmissionWorkflowResult> RejectAsync(RejectSubmissionRequest request, CancellationToken cancellationToken = default);
+
+    Task<SubmissionWorkflowResult> ReopenAsync(ReopenSubmissionRequest request, CancellationToken cancellationToken = default);
 }

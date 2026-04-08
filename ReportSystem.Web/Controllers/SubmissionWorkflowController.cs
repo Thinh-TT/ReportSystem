@@ -113,6 +113,22 @@ public class SubmissionWorkflowController : ControllerBase
         return await ExecuteAsync(() => _workflowService.RejectAsync(workflowRequest, cancellationToken));
     }
 
+    [HttpPost("{submissionId:long}/reopen")]
+    public async Task<IActionResult> Reopen(
+        [FromRoute] long submissionId,
+        [FromBody] ReopenApiRequest request,
+        CancellationToken cancellationToken)
+    {
+        var workflowRequest = new ReopenSubmissionRequest
+        {
+            SubmissionId = submissionId,
+            ActionByUserId = request.ActionByUserId,
+            Reason = request.Reason
+        };
+
+        return await ExecuteAsync(() => _workflowService.ReopenAsync(workflowRequest, cancellationToken));
+    }
+
     private async Task<IActionResult> ExecuteAsync(Func<Task<SubmissionWorkflowResult>> operation)
     {
         try
@@ -160,5 +176,11 @@ public class SubmissionWorkflowController : ControllerBase
     {
         public Guid ActionByUserId { get; set; }
         public string? ManagerNote { get; set; }
+    }
+
+    public sealed class ReopenApiRequest
+    {
+        public Guid ActionByUserId { get; set; }
+        public string? Reason { get; set; }
     }
 }

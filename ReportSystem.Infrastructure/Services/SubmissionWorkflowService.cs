@@ -119,7 +119,7 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         _dbContext.ReportSubmissions.Add(submission);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
     }
 
     public async Task<SubmissionWorkflowResult> UpdateFieldValuesAsync(
@@ -183,7 +183,7 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         submission.UpdatedAt = utcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
     }
 
     public async Task<SubmissionWorkflowResult> SubmitAsync(
@@ -240,7 +240,7 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
     }
 
     public async Task<SubmissionWorkflowResult> AutoEvaluateAsync(
@@ -358,7 +358,7 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
     }
 
     public async Task<SubmissionWorkflowResult> ApproveAsync(
@@ -412,7 +412,7 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
     }
 
     public async Task<SubmissionWorkflowResult> RejectAsync(
@@ -455,7 +455,90 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return Map(submission);
+        return await BuildWorkflowResultAsync(submission, cancellationToken);
+    }
+
+    public async Task<SubmissionWorkflowResult> ReopenAsync(
+        ReopenSubmissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var sourceSubmission = await _dbContext.ReportSubmissions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == request.SubmissionId, cancellationToken);
+
+        if (sourceSubmission is null)
+        {
+            throw new WorkflowNotFoundException($"Submission `{request.SubmissionId}` was not found.");
+        }
+
+        var isAllowedSourceStatus =
+            string.Equals(sourceSubmission.Status, SubmissionStatuses.Rejected, StringComparison.Ordinal) ||
+            string.Equals(sourceSubmission.Status, SubmissionStatuses.Approved, StringComparison.Ordinal);
+
+        if (!isAllowedSourceStatus)
+        {
+            throw new WorkflowRuleViolationException("Only REJECTED or APPROVED submissions can be reopened.");
+        }
+
+        await EnsureActionUserExistsAsync(request.ActionByUserId, cancellationToken);
+
+        var utcNow = DateTime.UtcNow;
+        var draft = new ReportSubmission
+        {
+            SubmissionNo = await GenerateSubmissionNoAsync(cancellationToken),
+            TemplateVersionId = sourceSubmission.TemplateVersionId,
+            ReportDate = sourceSubmission.ReportDate,
+            CreatedByUserId = sourceSubmission.CreatedByUserId,
+            PerformedByText = sourceSubmission.PerformedByText,
+            Status = SubmissionStatuses.Draft,
+            AutoResult = SubmissionAutoResults.Pending,
+            ManagerResult = SubmissionAutoResults.Pending,
+            CreatedAt = utcNow,
+            UpdatedAt = utcNow
+        };
+
+        _dbContext.ReportSubmissions.Add(draft);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var sourceFieldValues = await _dbContext.ReportFieldValues
+            .AsNoTracking()
+            .Where(x => x.SubmissionId == sourceSubmission.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var source in sourceFieldValues)
+        {
+            _dbContext.ReportFieldValues.Add(new ReportFieldValue
+            {
+                SubmissionId = draft.Id,
+                FieldId = source.FieldId,
+                ValueText = source.ValueText,
+                ValueNumber = source.ValueNumber,
+                ValueDate = source.ValueDate,
+                ValueDateTime = source.ValueDateTime,
+                ValueBool = source.ValueBool,
+                NormalizedValue = source.NormalizedValue,
+                AutoResult = SubmissionAutoResults.Pending,
+                EvaluationNote = null,
+                RuleSnapshotJson = null,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow
+            });
+        }
+
+        _dbContext.ApprovalLogs.Add(new ApprovalLog
+        {
+            SubmissionId = draft.Id,
+            Action = ApprovalActions.Reopen,
+            FromStatus = sourceSubmission.Status,
+            ToStatus = SubmissionStatuses.Draft,
+            ActionByUserId = request.ActionByUserId,
+            Comment = request.Reason,
+            MetadataJson = JsonSerializer.Serialize(new { sourceSubmissionId = sourceSubmission.Id }, JsonOptions),
+            ActionAt = utcNow
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await BuildWorkflowResultAsync(draft, cancellationToken);
     }
 
     private async Task EnsureActionUserExistsAsync(Guid userId, CancellationToken cancellationToken)
@@ -467,19 +550,47 @@ public sealed class SubmissionWorkflowService : ISubmissionWorkflowService
         }
     }
 
-    private static SubmissionWorkflowResult Map(ReportSubmission submission)
+    private async Task<SubmissionWorkflowResult> BuildWorkflowResultAsync(
+        ReportSubmission submission,
+        CancellationToken cancellationToken)
     {
+        var logs = await _dbContext.ApprovalLogs
+            .AsNoTracking()
+            .Where(x => x.SubmissionId == submission.Id)
+            .OrderBy(x => x.ActionAt)
+            .ThenBy(x => x.Id)
+            .Select(x => new SubmissionWorkflowLogItem
+            {
+                LogId = x.Id,
+                Action = x.Action,
+                FromStatus = x.FromStatus,
+                ToStatus = x.ToStatus,
+                ActionByUserId = x.ActionByUserId,
+                Comment = x.Comment,
+                MetadataJson = x.MetadataJson,
+                ActionAt = x.ActionAt
+            })
+            .ToListAsync(cancellationToken);
+
         return new SubmissionWorkflowResult
         {
             SubmissionId = submission.Id,
             SubmissionNo = submission.SubmissionNo,
+            TemplateVersionId = submission.TemplateVersionId,
+            ReportDate = submission.ReportDate,
+            CreatedByUserId = submission.CreatedByUserId,
+            PerformedByText = submission.PerformedByText,
             Status = submission.Status,
             AutoResult = submission.AutoResult,
             ManagerResult = submission.ManagerResult,
+            ManagerNote = submission.ManagerNote,
+            ApprovedByUserId = submission.ApprovedByUserId,
             SubmittedAt = submission.SubmittedAt,
             EvaluatedAt = submission.EvaluatedAt,
             ApprovedAt = submission.ApprovedAt,
-            UpdatedAt = submission.UpdatedAt
+            CreatedAt = submission.CreatedAt,
+            UpdatedAt = submission.UpdatedAt,
+            Logs = logs
         };
     }
 

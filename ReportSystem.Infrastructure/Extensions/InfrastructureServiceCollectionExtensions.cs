@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using ReportSystem.Application.Services.Templates;
 using ReportSystem.Application.Services.Workflow;
 using ReportSystem.Infrastructure.Services;
 
@@ -8,6 +9,7 @@ public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
+        services.AddScoped<ITemplateWorkflowService, TemplateWorkflowService>();
         services.AddScoped<ISubmissionWorkflowService, SubmissionWorkflowService>();
         return services;
     }
