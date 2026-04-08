@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReportSystem.Infrastructure.Data;
+using ReportSystem.Infrastructure.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,12 @@ builder.Services.AddDbContext<ReportSystemDbContext>(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ReportSystemDbContext>();
+    await dbContext.Database.MigrateAsync();
+    await MinimalDataSeeder.SeedAsync(dbContext);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
