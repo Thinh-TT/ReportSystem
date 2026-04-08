@@ -1,0 +1,320 @@
+@{
+    ViewData["Title"] = "Manager Workspace";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Manager Workspace</h2>
+    <span class="text-muted">Review, evaluate, approve or reject submissions</span>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Filters</h5>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label" for="filterTemplateVersionId">Template Version</label>
+                <select class="form-select" id="filterTemplateVersionId">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="filterStatus">Status</label>
+                <select class="form-select" id="filterStatus">
+                    <option value="">All</option>
+                    <option>DRAFT</option>
+                    <option>SUBMITTED</option>
+                    <option>AUTO_EVALUATED</option>
+                    <option>APPROVED</option>
+                    <option>REJECTED</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filterCreatedByUserId">Created By</label>
+                <select class="form-select" id="filterCreatedByUserId">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="filterDateFrom">Date From</label>
+                <input class="form-control" id="filterDateFrom" type="date" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="filterDateTo">Date To</label>
+                <input class="form-control" id="filterDateTo" type="date" />
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-primary" id="loadSubmissionsBtn" type="button">Load Submissions</button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Submissions</h5>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0" id="managerSubmissionTable">
+                <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>ID</th>
+                    <th>No</th>
+                    <th>Template Version</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Auto</th>
+                    <th>Manager</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Actions</h5>
+        <dl class="row mb-3">
+            <dt class="col-3">Selected Submission ID</dt>
+            <dd class="col-9" id="selectedSubmissionId">-</dd>
+            <dt class="col-3">Selected Status</dt>
+            <dd class="col-9" id="selectedSubmissionStatus">-</dd>
+        </dl>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="managerActionByUserId">Manager User</label>
+                <select class="form-select" id="managerActionByUserId"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="managerResult">Manager Result</label>
+                <select class="form-select" id="managerResult">
+                    <option>PASS</option>
+                    <option>FAIL</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="managerNote">Manager Note</label>
+                <input class="form-control" id="managerNote" />
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-outline-primary" id="evaluateBtn" type="button">Auto Evaluate</button>
+            <button class="btn btn-success" id="approveBtn" type="button">Approve</button>
+            <button class="btn btn-danger" id="rejectBtn" type="button">Reject</button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">API Response Log</h5>
+        <pre class="bg-light p-3 mb-0" id="managerLog" style="max-height: 260px; overflow: auto;"></pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const managerState = {
+            users: [],
+            templates: [],
+            versions: [],
+            submissions: [],
+            selectedSubmission: null
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            bindManagerEvents();
+            initializeManagerPage();
+        });
+
+        function bindManagerEvents() {
+            document.getElementById("loadSubmissionsBtn").addEventListener("click", loadSubmissions);
+            document.getElementById("evaluateBtn").addEventListener("click", autoEvaluateSelected);
+            document.getElementById("approveBtn").addEventListener("click", approveSelected);
+            document.getElementById("rejectBtn").addEventListener("click", rejectSelected);
+        }
+
+        async function initializeManagerPage() {
+            try {
+                managerState.users = await apiGet("/api/management/users");
+                managerState.templates = await apiGet("/api/management/report-templates");
+                managerState.versions = await apiGet("/api/management/report-template-versions");
+
+                renderManagerUserSelect();
+                renderFilterTemplateSelect();
+                await loadSubmissions();
+                logManager("Initialization completed.");
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        async function loadSubmissions() {
+            try {
+                const query = buildSubmissionQuery();
+                const url = query ? `/api/submissions?${query}` : "/api/submissions";
+                managerState.submissions = await apiGet(url);
+                renderSubmissionTable();
+                syncSelectedSubmissionState();
+                logManager(managerState.submissions);
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        function buildSubmissionQuery() {
+            const params = new URLSearchParams();
+            appendIfExists(params, "templateVersionId", document.getElementById("filterTemplateVersionId").value);
+            appendIfExists(params, "status", document.getElementById("filterStatus").value);
+            appendIfExists(params, "createdByUserId", document.getElementById("filterCreatedByUserId").value);
+            appendIfExists(params, "reportDateFrom", document.getElementById("filterDateFrom").value);
+            appendIfExists(params, "reportDateTo", document.getElementById("filterDateTo").value);
+            return params.toString();
+        }
+
+        function appendIfExists(params, key, value) {
+            if (value && value.trim() !== "") {
+                params.append(key, value.trim());
+            }
+        }
+
+        function renderManagerUserSelect() {
+            const options = managerState.users
+                .map((x) => `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`)
+                .join("");
+
+            document.getElementById("managerActionByUserId").innerHTML = options;
+
+            const filterOptions = ["<option value=\"\">All</option>"]
+                .concat(managerState.users.map((x) => `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`));
+            document.getElementById("filterCreatedByUserId").innerHTML = filterOptions.join("");
+        }
+
+        function renderFilterTemplateSelect() {
+            const options = ["<option value=\"\">All</option>"];
+            const publishedVersions = managerState.versions.filter((x) => x.status === "PUBLISHED");
+            for (const version of publishedVersions) {
+                const template = managerState.templates.find((x) => x.id === version.templateId);
+                const code = template ? template.templateCode : `Template ${version.templateId}`;
+                options.push(`<option value="${version.id}">${code} - v${version.versionNo}</option>`);
+            }
+            document.getElementById("filterTemplateVersionId").innerHTML = options.join("");
+        }
+
+        function renderSubmissionTable() {
+            const tbody = document.querySelector("#managerSubmissionTable tbody");
+            tbody.innerHTML = managerState.submissions.map((x) => `
+                <tr>
+                    <td><button class="btn btn-sm btn-outline-secondary" type="button" onclick="selectSubmission(${x.submissionId})">Select</button></td>
+                    <td>${x.submissionId}</td>
+                    <td>${x.submissionNo}</td>
+                    <td>${x.templateVersionId}</td>
+                    <td>${x.reportDate}</td>
+                    <td>${x.status}</td>
+                    <td>${x.autoResult}</td>
+                    <td>${x.managerResult}</td>
+                </tr>
+            `).join("");
+        }
+
+        window.selectSubmission = (submissionId) => {
+            managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === submissionId) || null;
+            syncSelectedSubmissionState();
+        };
+
+        function syncSelectedSubmissionState() {
+            document.getElementById("selectedSubmissionId").textContent = managerState.selectedSubmission ? managerState.selectedSubmission.submissionId : "-";
+            document.getElementById("selectedSubmissionStatus").textContent = managerState.selectedSubmission ? managerState.selectedSubmission.status : "-";
+        }
+
+        async function autoEvaluateSelected() {
+            if (!managerState.selectedSubmission) {
+                logManager("Please select a submission.");
+                return;
+            }
+
+            try {
+                const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/evaluate`, "POST");
+                logManager(result);
+                await loadSubmissions();
+                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
+                syncSelectedSubmissionState();
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        async function approveSelected() {
+            if (!managerState.selectedSubmission) {
+                logManager("Please select a submission.");
+                return;
+            }
+
+            try {
+                const payload = {
+                    actionByUserId: document.getElementById("managerActionByUserId").value,
+                    managerResult: document.getElementById("managerResult").value,
+                    managerNote: document.getElementById("managerNote").value
+                };
+                const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/approve`, "POST", payload);
+                logManager(result);
+                await loadSubmissions();
+                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
+                syncSelectedSubmissionState();
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        async function rejectSelected() {
+            if (!managerState.selectedSubmission) {
+                logManager("Please select a submission.");
+                return;
+            }
+
+            try {
+                const payload = {
+                    actionByUserId: document.getElementById("managerActionByUserId").value,
+                    managerNote: document.getElementById("managerNote").value
+                };
+                const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/reject`, "POST", payload);
+                logManager(result);
+                await loadSubmissions();
+                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
+                syncSelectedSubmissionState();
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        async function apiGet(url) {
+            const response = await fetch(url);
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        async function apiSend(url, method, payload) {
+            const options = { method, headers: {} };
+            if (payload !== undefined) {
+                options.headers["Content-Type"] = "application/json";
+                options.body = JSON.stringify(payload);
+            }
+
+            const response = await fetch(url, options);
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        function logManager(value) {
+            const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            document.getElementById("managerLog").textContent = text;
+        }
+    </script>
+}

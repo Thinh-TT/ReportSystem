@@ -1,0 +1,346 @@
+@{
+    ViewData["Title"] = "Employee Workspace";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Employee Workspace</h2>
+    <span class="text-muted">Create draft, fill values, and submit</span>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">1) Create Draft</h5>
+                <div class="mb-3">
+                    <label class="form-label" for="templateVersionId">Template Version</label>
+                    <select class="form-select" id="templateVersionId"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="reportDate">Report Date</label>
+                    <input class="form-control" id="reportDate" type="date" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="createdByUserId">Created By User</label>
+                    <select class="form-select" id="createdByUserId"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="performedByText">Performed By</label>
+                    <input class="form-control" id="performedByText" placeholder="Operator name" />
+                </div>
+                <button class="btn btn-primary" id="createDraftBtn" type="button">Create Draft</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">2) Draft Actions</h5>
+                <dl class="row mb-3">
+                    <dt class="col-4">Submission ID</dt>
+                    <dd class="col-8" id="draftSubmissionId">-</dd>
+                    <dt class="col-4">Submission No</dt>
+                    <dd class="col-8" id="draftSubmissionNo">-</dd>
+                    <dt class="col-4">Status</dt>
+                    <dd class="col-8" id="draftStatus">-</dd>
+                </dl>
+                <div class="mb-3">
+                    <label class="form-label" for="submitActionByUserId">Submit Action User</label>
+                    <select class="form-select" id="submitActionByUserId"></select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" id="saveFieldValuesBtn" type="button">Save Field Values</button>
+                    <button class="btn btn-success" id="submitDraftBtn" type="button">Submit Draft</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h5 class="card-title">3) Field Values</h5>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0" id="fieldsTable">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Code</th>
+                    <th>Label</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Value</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h5 class="card-title">API Response Log</h5>
+        <pre class="bg-light p-3 mb-0" id="employeeLog" style="max-height: 260px; overflow: auto;"></pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const employeeState = {
+            users: [],
+            templates: [],
+            versions: [],
+            fields: [],
+            fieldValues: [],
+            draft: null,
+            draftTemplateVersionId: null
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("reportDate").valueAsDate = new Date();
+            bindEmployeeEvents();
+            initializeEmployeePage();
+        });
+
+        function bindEmployeeEvents() {
+            document.getElementById("createDraftBtn").addEventListener("click", createDraft);
+            document.getElementById("saveFieldValuesBtn").addEventListener("click", saveFieldValues);
+            document.getElementById("submitDraftBtn").addEventListener("click", submitDraft);
+            document.getElementById("templateVersionId").addEventListener("change", renderFieldRows);
+        }
+
+        async function initializeEmployeePage() {
+            try {
+                employeeState.users = await apiGet("/api/management/users");
+                employeeState.templates = await apiGet("/api/management/report-templates");
+                employeeState.versions = await apiGet("/api/management/report-template-versions");
+                employeeState.fields = await apiGet("/api/management/template-fields");
+
+                renderUserSelect("createdByUserId", employeeState.users);
+                renderUserSelect("submitActionByUserId", employeeState.users);
+                renderTemplateVersionSelect();
+                renderFieldRows();
+                logEmployee("Initialization completed.");
+            } catch (error) {
+                logEmployee(error.message);
+            }
+        }
+
+        async function createDraft() {
+            try {
+                const payload = {
+                    templateVersionId: Number(document.getElementById("templateVersionId").value),
+                    reportDate: document.getElementById("reportDate").value,
+                    createdByUserId: document.getElementById("createdByUserId").value,
+                    performedByText: document.getElementById("performedByText").value
+                };
+
+                const result = await apiSend("/api/submissions/draft", "POST", payload);
+                employeeState.draft = result;
+                employeeState.draftTemplateVersionId = payload.templateVersionId;
+                await loadDraftFieldValues();
+                renderDraftSummary();
+                renderFieldRows();
+                logEmployee(result);
+            } catch (error) {
+                logEmployee(error.message);
+            }
+        }
+
+        async function saveFieldValues() {
+            if (!employeeState.draft) {
+                logEmployee("Please create draft first.");
+                return;
+            }
+
+            try {
+                const rows = Array.from(document.querySelectorAll("#fieldsTable tbody tr"));
+                const fieldValues = rows.map((row) => buildFieldValuePayload(row));
+
+                const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/fields`, "PUT", {
+                    fieldValues
+                });
+
+                employeeState.draft = result;
+                await loadDraftFieldValues();
+                renderDraftSummary();
+                renderFieldRows();
+                logEmployee(result);
+            } catch (error) {
+                logEmployee(error.message);
+            }
+        }
+
+        async function submitDraft() {
+            if (!employeeState.draft) {
+                logEmployee("Please create draft first.");
+                return;
+            }
+
+            try {
+                const actionByUserId = document.getElementById("submitActionByUserId").value;
+                const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/submit`, "POST", {
+                    actionByUserId
+                });
+                employeeState.draft = result;
+                renderDraftSummary();
+                logEmployee(result);
+            } catch (error) {
+                logEmployee(error.message);
+            }
+        }
+
+        async function loadDraftFieldValues() {
+            if (!employeeState.draft) {
+                employeeState.fieldValues = [];
+                return;
+            }
+
+            const allValues = await apiGet("/api/management/report-field-values");
+            employeeState.fieldValues = allValues.filter((x) => x.submissionId === employeeState.draft.submissionId);
+        }
+
+        function renderUserSelect(elementId, users) {
+            const select = document.getElementById(elementId);
+            select.innerHTML = users.map((x) =>
+                `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`).join("");
+        }
+
+        function renderTemplateVersionSelect() {
+            const select = document.getElementById("templateVersionId");
+            const versionOptions = employeeState.versions
+                .filter((x) => x.status === "PUBLISHED")
+                .map((x) => {
+                    const template = employeeState.templates.find((t) => t.id === x.templateId);
+                    const templateCode = template ? template.templateCode : `Template ${x.templateId}`;
+                    return `<option value="${x.id}">${templateCode} - v${x.versionNo}</option>`;
+                });
+
+            select.innerHTML = versionOptions.join("");
+        }
+
+        function renderDraftSummary() {
+            document.getElementById("draftSubmissionId").textContent = employeeState.draft ? employeeState.draft.submissionId : "-";
+            document.getElementById("draftSubmissionNo").textContent = employeeState.draft ? employeeState.draft.submissionNo : "-";
+            document.getElementById("draftStatus").textContent = employeeState.draft ? employeeState.draft.status : "-";
+        }
+
+        function renderFieldRows() {
+            const selectedVersionId = employeeState.draftTemplateVersionId
+                ?? Number(document.getElementById("templateVersionId").value);
+
+            const fields = employeeState.fields
+                .filter((x) => x.templateVersionId === selectedVersionId)
+                .sort((a, b) => a.displayOrder - b.displayOrder);
+
+            const fieldValueMap = new Map(employeeState.fieldValues.map((x) => [x.fieldId, x]));
+
+            const tbody = document.querySelector("#fieldsTable tbody");
+            tbody.innerHTML = fields.map((field) => {
+                const existing = fieldValueMap.get(field.id);
+                return `
+                    <tr data-field-id="${field.id}" data-data-type="${field.dataType}">
+                        <td>${field.displayOrder}</td>
+                        <td>${field.fieldCode}</td>
+                        <td>${field.fieldLabel}</td>
+                        <td>${field.dataType}</td>
+                        <td>${field.isRequired ? "Yes" : "No"}</td>
+                        <td>${renderFieldInput(field, existing)}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function renderFieldInput(field, existingValue) {
+            const dataType = field.dataType;
+            if (dataType === "NUMBER") {
+                return `<input class="form-control" type="number" step="any" value="${existingValue?.valueNumber ?? ""}" />`;
+            }
+            if (dataType === "DATE") {
+                const value = existingValue?.valueDate ?? "";
+                return `<input class="form-control" type="date" value="${value}" />`;
+            }
+            if (dataType === "DATETIME") {
+                const dateTime = existingValue?.valueDateTime ? toDateTimeLocal(existingValue.valueDateTime) : "";
+                return `<input class="form-control" type="datetime-local" value="${dateTime}" />`;
+            }
+            if (dataType === "BOOLEAN") {
+                const selected = existingValue?.valueBool;
+                return `
+                    <select class="form-select">
+                        <option value="">-- Select --</option>
+                        <option value="true" ${selected === true ? "selected" : ""}>True</option>
+                        <option value="false" ${selected === false ? "selected" : ""}>False</option>
+                    </select>
+                `;
+            }
+            return `<input class="form-control" value="${escapeHtml(existingValue?.valueText ?? "")}" />`;
+        }
+
+        function buildFieldValuePayload(row) {
+            const fieldId = Number(row.dataset.fieldId);
+            const dataType = row.dataset.dataType;
+            const input = row.querySelector("input, select");
+
+            const payload = { fieldId };
+            if (dataType === "NUMBER") {
+                payload.valueNumber = input.value === "" ? null : Number(input.value);
+            } else if (dataType === "DATE") {
+                payload.valueDate = input.value || null;
+            } else if (dataType === "DATETIME") {
+                payload.valueDateTime = input.value ? new Date(input.value).toISOString() : null;
+            } else if (dataType === "BOOLEAN") {
+                payload.valueBool = input.value === "" ? null : input.value === "true";
+            } else {
+                payload.valueText = input.value || null;
+            }
+
+            return payload;
+        }
+
+        function toDateTimeLocal(isoDateTime) {
+            const date = new Date(isoDateTime);
+            const pad = (n) => n.toString().padStart(2, "0");
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function escapeHtml(value) {
+            return value
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        async function apiGet(url) {
+            const response = await fetch(url);
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        async function apiSend(url, method, payload) {
+            const response = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        function logEmployee(value) {
+            const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            document.getElementById("employeeLog").textContent = text;
+        }
+    </script>
+}

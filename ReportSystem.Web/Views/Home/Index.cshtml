@@ -1,8 +1,38 @@
-﻿@{
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mb-4">
+    <h1 class="display-5">Report System MVP</h1>
+    <p class="text-muted mb-0">Choose workspace by role to start operating workflow.</p>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Employee</h5>
+                <p class="card-text">Create draft, input field values, and submit report.</p>
+                <a class="btn btn-primary mt-auto" asp-controller="Employee" asp-action="Index">Open Employee Workspace</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Manager</h5>
+                <p class="card-text">Review submission list and perform evaluate/approve/reject actions.</p>
+                <a class="btn btn-primary mt-auto" asp-controller="Manager" asp-action="Index">Open Manager Workspace</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Admin</h5>
+                <p class="card-text">CRUD template, version, field, and rule for future form extension.</p>
+                <a class="btn btn-primary mt-auto" asp-controller="Admin" asp-action="Index">Open Admin Workspace</a>
+            </div>
+        </div>
+    </div>
 </div>

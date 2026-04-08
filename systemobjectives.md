@@ -19,16 +19,16 @@
 
 ### 2.1) Chốt contract nghiệp vụ (quy tắc bắt buộc khi làm phần 2)
 
-- [ ] Khóa state machine submission: chỉ cho phép `DRAFT -> SUBMITTED -> AUTO_EVALUATED -> APPROVED/REJECTED`.
-- [ ] Chỉ cho phép sửa `report_field_values` khi submission ở trạng thái `DRAFT`.
-- [ ] `Submit` chỉ áp dụng cho submission `DRAFT`, và phải đủ các field `is_required`.
-- [ ] `AutoEvaluate` chỉ áp dụng cho submission `SUBMITTED`, phải lưu `rule_snapshot_json` cho từng field và cập nhật `evaluated_at`.
-- [ ] `Approve/Reject` chỉ áp dụng cho submission `AUTO_EVALUATED`, phải lưu `approved_by_user_id`, `approved_at`, `manager_result`, `manager_note`.
-- [ ] Chặn `Approve` khi còn bất kỳ rule `severity = ERROR` bị fail (nếu chưa có cơ chế override chính thức).
-- [ ] Validate `report_field_values.field_id` thuộc đúng `template_version_id` của submission.
-- [ ] Mọi transition phải ghi log vào `approval_logs` với `action`, `from_status`, `to_status`, `action_by_user_id`, `action_at`.
-- [ ] `report_template_versions` đã `PUBLISHED` và đã có submission thì không cho sửa/xóa `template_fields` và `field_rules` của version đó.
-- [ ] Tất cả timestamp nghiệp vụ dùng UTC (`created_at`, `updated_at`, `submitted_at`, `evaluated_at`, `approved_at`, `action_at`).
+- [x] Khóa state machine submission: chỉ cho phép `DRAFT -> SUBMITTED -> AUTO_EVALUATED -> APPROVED/REJECTED`.
+- [x] Chỉ cho phép sửa `report_field_values` khi submission ở trạng thái `DRAFT`.
+- [x] `Submit` chỉ áp dụng cho submission `DRAFT`, và phải đủ các field `is_required`.
+- [x] `AutoEvaluate` chỉ áp dụng cho submission `SUBMITTED`, phải lưu `rule_snapshot_json` cho từng field và cập nhật `evaluated_at`.
+- [x] `Approve/Reject` chỉ áp dụng cho submission `AUTO_EVALUATED`, phải lưu `approved_by_user_id`, `approved_at`, `manager_result`, `manager_note`.
+- [x] Chặn `Approve` khi còn bất kỳ rule `severity = ERROR` bị fail (nếu chưa có cơ chế override chính thức).
+- [x] Validate `report_field_values.field_id` thuộc đúng `template_version_id` của submission.
+- [x] Mọi transition phải ghi log vào `approval_logs` với `action`, `from_status`, `to_status`, `action_by_user_id`, `action_at`.
+- [x] `report_template_versions` đã `PUBLISHED` và đã có submission thì không cho sửa/xóa `template_fields` và `field_rules` của version đó.
+- [x] Tất cả timestamp nghiệp vụ dùng UTC (`created_at`, `updated_at`, `submitted_at`, `evaluated_at`, `approved_at`, `action_at`).
 
 ### 2.2) Checklist triển khai Core Workflow MVP (chia theo stack)
 
@@ -40,33 +40,33 @@
 
 #### Stack B) Workflow API (luồng nghiệp vụ chính)
 
-- [ ] `POST /api/submissions/draft`
-- [ ] `PUT /api/submissions/{id}/fields`
-- [ ] `POST /api/submissions/{id}/submit`
-- [ ] `POST /api/submissions/{id}/evaluate`
-- [ ] `POST /api/submissions/{id}/approve`
-- [ ] `POST /api/submissions/{id}/reject`
-- [ ] `GET /api/submissions` (filter theo template, date, status, created_by)
+- [x] `POST /api/submissions/draft`
+- [x] `PUT /api/submissions/{id}/fields`
+- [x] `POST /api/submissions/{id}/submit`
+- [x] `POST /api/submissions/{id}/evaluate`
+- [x] `POST /api/submissions/{id}/approve`
+- [x] `POST /api/submissions/{id}/reject`
+- [x] `GET /api/submissions` (filter theo template, date, status, created_by)
 
 #### Stack C) CRUD Management API (CRUD toàn bảng)
 
-- [ ] Chuẩn hóa endpoint CRUD cho mọi resource: `GET list`, `GET by id`, `POST`, `PUT`, `DELETE`.
-- [ ] CRUD nhóm quyền/người dùng: `users`, `roles`, `user_roles`.
-- [ ] CRUD nhóm template: `report_templates`, `report_template_versions`, `template_fields`, `field_rules`.
-- [ ] CRUD nhóm vận hành báo cáo: `report_submissions`, `report_field_values`, `report_attachments`, `approval_logs`.
+- [x] Chuẩn hóa endpoint CRUD cho mọi resource: `GET list`, `GET by id`, `POST`, `PUT`, `DELETE`.
+- [x] CRUD nhóm quyền/người dùng: `users`, `roles`, `user_roles`.
+- [x] CRUD nhóm template: `report_templates`, `report_template_versions`, `template_fields`, `field_rules`.
+- [x] CRUD nhóm vận hành báo cáo: `report_submissions`, `report_field_values`, `report_attachments`, `approval_logs`.
 
 #### Stack D) UI theo vai trò
 
-- [ ] Employee: tạo draft, nhập dữ liệu, submit báo cáo.
-- [ ] Manager: xem danh sách, xem chi tiết, approve/reject, nhập ghi chú quản lý.
-- [ ] Admin: quản trị template/version/field/rule bằng màn hình CRUD.
+- [x] Employee: tạo draft, nhập dữ liệu, submit báo cáo.
+- [x] Manager: xem danh sách, xem chi tiết, approve/reject, nhập ghi chú quản lý.
+- [x] Admin: quản trị template/version/field/rule bằng màn hình CRUD.
 
 #### Stack E) Guardrails + Test + DoD
 
-- [ ] Thêm guardrails nghiệp vụ ở API/Application để CRUD không phá workflow.
-- [ ] Viết integration test cho luồng end-to-end: `draft -> submit -> evaluate -> approve/reject`.
-- [ ] Viết smoke test cho CRUD toàn bảng (ít nhất case create/update/delete/list cơ bản).
-- [ ] Định nghĩa tiêu chí hoàn thành phần 2 (DoD): workflow chạy end-to-end + CRUD toàn bảng + guardrails + test pass.
+- [x] Thêm guardrails nghiệp vụ ở API/Application để CRUD không phá workflow.
+- [x] Viết integration test cho luồng end-to-end: `draft -> submit -> evaluate -> approve/reject`.
+- [x] Viết smoke test cho CRUD toàn bảng (ít nhất case create/update/delete/list cơ bản).
+- [x] Định nghĩa tiêu chí hoàn thành phần 2 (DoD): workflow chạy end-to-end + CRUD toàn bảng + guardrails + test pass.
 
 ## 3) Rule engine và ràng buộc nghiệp vụ
 

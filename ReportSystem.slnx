@@ -2,5 +2,6 @@
   <Project Path="ReportSystem.Application/ReportSystem.Application.csproj" />
   <Project Path="ReportSystem.Domain/ReportSystem.Domain.csproj" />
   <Project Path="ReportSystem.Infrastructure/ReportSystem.Infrastructure.csproj" />
+  <Project Path="ReportSystem.Tests/ReportSystem.Tests.csproj" />
   <Project Path="ReportSystem.Web/ReportSystem.Web.csproj" />
 </Solution>

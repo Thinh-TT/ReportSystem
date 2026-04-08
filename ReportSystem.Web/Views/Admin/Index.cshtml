@@ -1,0 +1,512 @@
+@{
+    ViewData["Title"] = "Admin Workspace";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Admin Workspace</h2>
+    <span class="text-muted">Manage template, version, field, and rule</span>
+</div>
+
+<div class="accordion" id="adminAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingTemplates">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTemplates" aria-expanded="true" aria-controls="collapseTemplates">
+                Report Templates
+            </button>
+        </h2>
+        <div id="collapseTemplates" class="accordion-collapse collapse show" aria-labelledby="headingTemplates" data-bs-parent="#adminAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label" for="templateId">ID (for update/delete)</label>
+                        <input class="form-control" id="templateId" type="number" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="templateCode">Code</label>
+                        <input class="form-control" id="templateCode" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="templateName">Name</label>
+                        <input class="form-control" id="templateName" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="templateDescription">Description</label>
+                        <input class="form-control" id="templateDescription" />
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" id="templateIsActive" type="checkbox" checked />
+                            <label class="form-check-label" for="templateIsActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" id="createTemplateBtn" type="button">Create</button>
+                    <button class="btn btn-outline-primary" id="updateTemplateBtn" type="button">Update</button>
+                    <button class="btn btn-danger" id="deleteTemplateBtn" type="button">Delete</button>
+                    <button class="btn btn-secondary" id="refreshTemplateBtn" type="button">Refresh</button>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-striped mb-0" id="templateTable">
+                        <thead>
+                        <tr><th>ID</th><th>Code</th><th>Name</th><th>Active</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingVersions">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVersions" aria-expanded="false" aria-controls="collapseVersions">
+                Report Template Versions
+            </button>
+        </h2>
+        <div id="collapseVersions" class="accordion-collapse collapse" aria-labelledby="headingVersions" data-bs-parent="#adminAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionId">ID</label>
+                        <input class="form-control" id="versionId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionTemplateId">Template ID</label>
+                        <input class="form-control" id="versionTemplateId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionNo">Version No</label>
+                        <input class="form-control" id="versionNo" type="number" value="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionStatus">Status</label>
+                        <input class="form-control" id="versionStatus" value="DRAFT" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionPublishedBy">Published By (Guid)</label>
+                        <input class="form-control" id="versionPublishedBy" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="versionPublishedAt">Published At</label>
+                        <input class="form-control" id="versionPublishedAt" type="datetime-local" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="versionEffectiveFrom">Effective From</label>
+                        <input class="form-control" id="versionEffectiveFrom" type="datetime-local" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="versionEffectiveTo">Effective To</label>
+                        <input class="form-control" id="versionEffectiveTo" type="datetime-local" />
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" id="createVersionBtn" type="button">Create</button>
+                    <button class="btn btn-outline-primary" id="updateVersionBtn" type="button">Update</button>
+                    <button class="btn btn-danger" id="deleteVersionBtn" type="button">Delete</button>
+                    <button class="btn btn-secondary" id="refreshVersionBtn" type="button">Refresh</button>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-striped mb-0" id="versionTable">
+                        <thead>
+                        <tr><th>ID</th><th>Template</th><th>Version</th><th>Status</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingFields">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFields" aria-expanded="false" aria-controls="collapseFields">
+                Template Fields
+            </button>
+        </h2>
+        <div id="collapseFields" class="accordion-collapse collapse" aria-labelledby="headingFields" data-bs-parent="#adminAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldId">ID</label>
+                        <input class="form-control" id="fieldId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldTemplateVersionId">Template Version ID</label>
+                        <input class="form-control" id="fieldTemplateVersionId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldCode">Field Code</label>
+                        <input class="form-control" id="fieldCode" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldLabel">Field Label</label>
+                        <input class="form-control" id="fieldLabel" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldDataType">Data Type</label>
+                        <input class="form-control" id="fieldDataType" value="TEXT" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="fieldDisplayOrder">Display Order</label>
+                        <input class="form-control" id="fieldDisplayOrder" type="number" value="1" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="fieldUnit">Unit</label>
+                        <input class="form-control" id="fieldUnit" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="fieldPlaceholder">Placeholder</label>
+                        <input class="form-control" id="fieldPlaceholder" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="fieldOptionsJson">Options Json</label>
+                        <input class="form-control" id="fieldOptionsJson" />
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" id="fieldIsRequired" type="checkbox" />
+                            <label class="form-check-label" for="fieldIsRequired">Required</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" id="fieldIsActive" type="checkbox" checked />
+                            <label class="form-check-label" for="fieldIsActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" id="createFieldBtn" type="button">Create</button>
+                    <button class="btn btn-outline-primary" id="updateFieldBtn" type="button">Update</button>
+                    <button class="btn btn-danger" id="deleteFieldBtn" type="button">Delete</button>
+                    <button class="btn btn-secondary" id="refreshFieldBtn" type="button">Refresh</button>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-striped mb-0" id="fieldTable">
+                        <thead>
+                        <tr><th>ID</th><th>Version</th><th>Code</th><th>Type</th><th>Order</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingRules">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRules" aria-expanded="false" aria-controls="collapseRules">
+                Field Rules
+            </button>
+        </h2>
+        <div id="collapseRules" class="accordion-collapse collapse" aria-labelledby="headingRules" data-bs-parent="#adminAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleId">ID</label>
+                        <input class="form-control" id="ruleId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleFieldId">Field ID</label>
+                        <input class="form-control" id="ruleFieldId" type="number" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleOrder">Rule Order</label>
+                        <input class="form-control" id="ruleOrder" type="number" value="1" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleType">Rule Type</label>
+                        <input class="form-control" id="ruleType" value="RANGE" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleSeverity">Severity</label>
+                        <input class="form-control" id="ruleSeverity" value="ERROR" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" id="ruleIsActive" type="checkbox" checked />
+                            <label class="form-check-label" for="ruleIsActive">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleMinValue">Min Value</label>
+                        <input class="form-control" id="ruleMinValue" type="number" step="any" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleMaxValue">Max Value</label>
+                        <input class="form-control" id="ruleMaxValue" type="number" step="any" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="ruleThresholdValue">Threshold</label>
+                        <input class="form-control" id="ruleThresholdValue" type="number" step="any" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="ruleExpectedText">Expected Text</label>
+                        <input class="form-control" id="ruleExpectedText" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="ruleFailMessage">Fail Message</label>
+                        <input class="form-control" id="ruleFailMessage" />
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary" id="createRuleBtn" type="button">Create</button>
+                    <button class="btn btn-outline-primary" id="updateRuleBtn" type="button">Update</button>
+                    <button class="btn btn-danger" id="deleteRuleBtn" type="button">Delete</button>
+                    <button class="btn btn-secondary" id="refreshRuleBtn" type="button">Refresh</button>
+                </div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-striped mb-0" id="ruleTable">
+                        <thead>
+                        <tr><th>ID</th><th>Field</th><th>Order</th><th>Type</th><th>Severity</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h5 class="card-title">API Response Log</h5>
+        <pre class="bg-light p-3 mb-0" id="adminLog" style="max-height: 260px; overflow: auto;"></pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            bindAdminEvents();
+            refreshAllAdminData();
+        });
+
+        function bindAdminEvents() {
+            document.getElementById("createTemplateBtn").addEventListener("click", createTemplate);
+            document.getElementById("updateTemplateBtn").addEventListener("click", updateTemplate);
+            document.getElementById("deleteTemplateBtn").addEventListener("click", deleteTemplate);
+            document.getElementById("refreshTemplateBtn").addEventListener("click", refreshTemplates);
+
+            document.getElementById("createVersionBtn").addEventListener("click", createVersion);
+            document.getElementById("updateVersionBtn").addEventListener("click", updateVersion);
+            document.getElementById("deleteVersionBtn").addEventListener("click", deleteVersion);
+            document.getElementById("refreshVersionBtn").addEventListener("click", refreshVersions);
+
+            document.getElementById("createFieldBtn").addEventListener("click", createField);
+            document.getElementById("updateFieldBtn").addEventListener("click", updateField);
+            document.getElementById("deleteFieldBtn").addEventListener("click", deleteField);
+            document.getElementById("refreshFieldBtn").addEventListener("click", refreshFields);
+
+            document.getElementById("createRuleBtn").addEventListener("click", createRule);
+            document.getElementById("updateRuleBtn").addEventListener("click", updateRule);
+            document.getElementById("deleteRuleBtn").addEventListener("click", deleteRule);
+            document.getElementById("refreshRuleBtn").addEventListener("click", refreshRules);
+        }
+
+        async function refreshAllAdminData() {
+            await refreshTemplates();
+            await refreshVersions();
+            await refreshFields();
+            await refreshRules();
+        }
+
+        async function refreshTemplates() {
+            const templates = await apiGet("/api/management/report-templates");
+            document.querySelector("#templateTable tbody").innerHTML = templates.map((x) =>
+                `<tr><td>${x.id}</td><td>${x.templateCode}</td><td>${x.templateName}</td><td>${x.isActive}</td></tr>`).join("");
+        }
+
+        async function createTemplate() {
+            await apiSend("/api/management/report-templates", "POST", {
+                templateCode: document.getElementById("templateCode").value,
+                templateName: document.getElementById("templateName").value,
+                description: document.getElementById("templateDescription").value,
+                isActive: document.getElementById("templateIsActive").checked
+            });
+            await refreshTemplates();
+        }
+
+        async function updateTemplate() {
+            const id = Number(document.getElementById("templateId").value);
+            await apiSend(`/api/management/report-templates/${id}`, "PUT", {
+                templateCode: document.getElementById("templateCode").value,
+                templateName: document.getElementById("templateName").value,
+                description: document.getElementById("templateDescription").value,
+                isActive: document.getElementById("templateIsActive").checked
+            });
+            await refreshTemplates();
+        }
+
+        async function deleteTemplate() {
+            const id = Number(document.getElementById("templateId").value);
+            await apiDelete(`/api/management/report-templates/${id}`);
+            await refreshTemplates();
+        }
+
+        async function refreshVersions() {
+            const versions = await apiGet("/api/management/report-template-versions");
+            document.querySelector("#versionTable tbody").innerHTML = versions.map((x) =>
+                `<tr><td>${x.id}</td><td>${x.templateId}</td><td>${x.versionNo}</td><td>${x.status}</td></tr>`).join("");
+        }
+
+        async function createVersion() {
+            await apiSend("/api/management/report-template-versions", "POST", buildVersionPayload());
+            await refreshVersions();
+        }
+
+        async function updateVersion() {
+            const id = Number(document.getElementById("versionId").value);
+            await apiSend(`/api/management/report-template-versions/${id}`, "PUT", buildVersionPayload());
+            await refreshVersions();
+        }
+
+        async function deleteVersion() {
+            const id = Number(document.getElementById("versionId").value);
+            await apiDelete(`/api/management/report-template-versions/${id}`);
+            await refreshVersions();
+        }
+
+        function buildVersionPayload() {
+            return {
+                templateId: Number(document.getElementById("versionTemplateId").value),
+                versionNo: Number(document.getElementById("versionNo").value),
+                status: document.getElementById("versionStatus").value,
+                effectiveFrom: toIsoOrNull(document.getElementById("versionEffectiveFrom").value),
+                effectiveTo: toIsoOrNull(document.getElementById("versionEffectiveTo").value),
+                publishedBy: nullIfEmpty(document.getElementById("versionPublishedBy").value),
+                publishedAt: toIsoOrNull(document.getElementById("versionPublishedAt").value)
+            };
+        }
+
+        async function refreshFields() {
+            const fields = await apiGet("/api/management/template-fields");
+            document.querySelector("#fieldTable tbody").innerHTML = fields.map((x) =>
+                `<tr><td>${x.id}</td><td>${x.templateVersionId}</td><td>${x.fieldCode}</td><td>${x.dataType}</td><td>${x.displayOrder}</td></tr>`).join("");
+        }
+
+        async function createField() {
+            await apiSend("/api/management/template-fields", "POST", buildFieldPayload());
+            await refreshFields();
+        }
+
+        async function updateField() {
+            const id = Number(document.getElementById("fieldId").value);
+            await apiSend(`/api/management/template-fields/${id}`, "PUT", buildFieldPayload());
+            await refreshFields();
+        }
+
+        async function deleteField() {
+            const id = Number(document.getElementById("fieldId").value);
+            await apiDelete(`/api/management/template-fields/${id}`);
+            await refreshFields();
+        }
+
+        function buildFieldPayload() {
+            return {
+                templateVersionId: Number(document.getElementById("fieldTemplateVersionId").value),
+                fieldCode: document.getElementById("fieldCode").value,
+                fieldLabel: document.getElementById("fieldLabel").value,
+                dataType: document.getElementById("fieldDataType").value,
+                unit: nullIfEmpty(document.getElementById("fieldUnit").value),
+                isRequired: document.getElementById("fieldIsRequired").checked,
+                displayOrder: Number(document.getElementById("fieldDisplayOrder").value),
+                placeholder: nullIfEmpty(document.getElementById("fieldPlaceholder").value),
+                optionsJson: nullIfEmpty(document.getElementById("fieldOptionsJson").value),
+                isActive: document.getElementById("fieldIsActive").checked
+            };
+        }
+
+        async function refreshRules() {
+            const rules = await apiGet("/api/management/field-rules");
+            document.querySelector("#ruleTable tbody").innerHTML = rules.map((x) =>
+                `<tr><td>${x.id}</td><td>${x.fieldId}</td><td>${x.ruleOrder}</td><td>${x.ruleType}</td><td>${x.severity}</td></tr>`).join("");
+        }
+
+        async function createRule() {
+            await apiSend("/api/management/field-rules", "POST", buildRulePayload());
+            await refreshRules();
+        }
+
+        async function updateRule() {
+            const id = Number(document.getElementById("ruleId").value);
+            await apiSend(`/api/management/field-rules/${id}`, "PUT", buildRulePayload());
+            await refreshRules();
+        }
+
+        async function deleteRule() {
+            const id = Number(document.getElementById("ruleId").value);
+            await apiDelete(`/api/management/field-rules/${id}`);
+            await refreshRules();
+        }
+
+        function buildRulePayload() {
+            return {
+                fieldId: Number(document.getElementById("ruleFieldId").value),
+                ruleOrder: Number(document.getElementById("ruleOrder").value),
+                ruleType: document.getElementById("ruleType").value,
+                minValue: toNumberOrNull(document.getElementById("ruleMinValue").value),
+                maxValue: toNumberOrNull(document.getElementById("ruleMaxValue").value),
+                thresholdValue: toNumberOrNull(document.getElementById("ruleThresholdValue").value),
+                expectedText: nullIfEmpty(document.getElementById("ruleExpectedText").value),
+                severity: document.getElementById("ruleSeverity").value,
+                failMessage: nullIfEmpty(document.getElementById("ruleFailMessage").value),
+                isActive: document.getElementById("ruleIsActive").checked
+            };
+        }
+
+        function toIsoOrNull(value) {
+            return value ? new Date(value).toISOString() : null;
+        }
+
+        function toNumberOrNull(value) {
+            return value === "" ? null : Number(value);
+        }
+
+        function nullIfEmpty(value) {
+            return value && value.trim() !== "" ? value : null;
+        }
+
+        async function apiGet(url) {
+            const response = await fetch(url);
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        async function apiSend(url, method, payload) {
+            const response = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const body = await response.json();
+            if (!response.ok) {
+                logAdmin(body.message || JSON.stringify(body));
+                throw new Error(body.message || JSON.stringify(body));
+            }
+
+            logAdmin(body);
+            return body;
+        }
+
+        async function apiDelete(url) {
+            const response = await fetch(url, { method: "DELETE" });
+            if (!response.ok) {
+                const body = await response.json();
+                logAdmin(body.message || JSON.stringify(body));
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            logAdmin("Deleted successfully.");
+        }
+
+        function logAdmin(value) {
+            const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            document.getElementById("adminLog").textContent = text;
+        }
+    </script>
+}

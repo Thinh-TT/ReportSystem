@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReportSystem.Infrastructure.Data;
+using ReportSystem.Infrastructure.Extensions;
 using ReportSystem.Infrastructure.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<ReportSystemDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();
 
