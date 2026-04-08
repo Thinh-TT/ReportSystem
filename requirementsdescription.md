@@ -9,9 +9,9 @@ có nhiều loại báo cáo, mỗi báo cáo có những trường dữ liệu 
 ví dụ một số form báo cáo như sau:
 
 - pH metER daily check
-  Date pH: pH: pH: Slope Clean Conclusion Performed by Remark
+  Date | pH: | pH: | pH: | Slope | Clean | Conclusion | Performed | by | Remark
   Criteria: Slope: 85-115
 
 - CHECK THE QUALITY OF DISTILLED WATER
-  Date Batch pH TPC(CFU/mL) EC Chlorine Conclusion Performed by Remark
+  Date | Batch | pH | TPC(CFU/mL) | EC | Chlorine | Conclusion | Performed | by | Remark
   Criteria: pH: 5.0-7.5 TPC: < 100 CFU/mL EC: <25 μS/cm (at 25oC) Chlorine: < 0.1 ppm
