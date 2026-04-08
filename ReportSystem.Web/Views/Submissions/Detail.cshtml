@@ -1,0 +1,198 @@
+@{
+    ViewData["Title"] = "Submission Detail";
+    var submissionId = Convert.ToInt64(ViewData["SubmissionId"] ?? 0L);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0">Submission Detail</h2>
+        <span class="text-muted">Submission ID: @submissionId</span>
+    </div>
+    <a class="btn btn-outline-secondary" asp-controller="Manager" asp-action="Index">Back to Manager</a>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Report Information</h5>
+        <div class="row g-2">
+            <div class="col-md-4"><strong>No:</strong> <span id="submissionNo">-</span></div>
+            <div class="col-md-4"><strong>Template:</strong> <span id="templateName">-</span></div>
+            <div class="col-md-4"><strong>Date:</strong> <span id="reportDate">-</span></div>
+            <div class="col-md-4"><strong>Status:</strong> <span id="status">-</span></div>
+            <div class="col-md-4"><strong>Auto:</strong> <span id="autoResult">-</span></div>
+            <div class="col-md-4"><strong>Manager:</strong> <span id="managerResult">-</span></div>
+            <div class="col-md-4"><strong>Created By:</strong> <span id="createdBy">-</span></div>
+            <div class="col-md-4"><strong>Performed By:</strong> <span id="performedBy">-</span></div>
+            <div class="col-md-4"><strong>Manager Note:</strong> <span id="managerNote">-</span></div>
+            <div class="col-md-4"><strong>Submitted At:</strong> <span id="submittedAt">-</span></div>
+            <div class="col-md-4"><strong>Evaluated At:</strong> <span id="evaluatedAt">-</span></div>
+            <div class="col-md-4"><strong>Approved At:</strong> <span id="approvedAt">-</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Fields</h5>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Code</th>
+                    <th>Label</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Value</th>
+                    <th>Auto</th>
+                    <th>Evaluation Note</th>
+                </tr>
+                </thead>
+                <tbody id="fieldRows"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title">API Response Log</h5>
+        <pre class="bg-light p-3 mb-0" id="detailLog" style="max-height: 280px; overflow: auto;"></pre>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const submissionId = @submissionId;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initializePage();
+        });
+
+        async function initializePage() {
+            try {
+                const submission = await apiGet(`/api/management/report-submissions/${submissionId}`);
+                const allFieldValues = await apiGet("/api/management/report-field-values");
+                const allFields = await apiGet("/api/management/template-fields");
+                const versions = await apiGet("/api/management/report-template-versions");
+                const templates = await apiGet("/api/management/report-templates");
+                const users = await apiGet("/api/management/users");
+
+                const templateVersion = versions.find((x) => x.id === submission.templateVersionId);
+                const template = templateVersion
+                    ? templates.find((x) => x.id === templateVersion.templateId)
+                    : null;
+                const creator = users.find((x) => x.id === submission.createdByUserId);
+
+                renderSubmissionInfo(submission, template, creator);
+
+                const fields = allFields
+                    .filter((x) => x.templateVersionId === submission.templateVersionId)
+                    .sort((a, b) => a.displayOrder - b.displayOrder);
+
+                const fieldValueMap = new Map(
+                    allFieldValues
+                        .filter((x) => x.submissionId === submission.id)
+                        .map((x) => [x.fieldId, x]));
+
+                renderFieldRows(fields, fieldValueMap);
+                logDetail({ submission, fieldsCount: fields.length });
+            } catch (error) {
+                logDetail(error.message);
+            }
+        }
+
+        function renderSubmissionInfo(submission, template, creator) {
+            document.getElementById("submissionNo").textContent = submission.submissionNo;
+            document.getElementById("templateName").textContent = template ? template.templateName : `Template Version ${submission.templateVersionId}`;
+            document.getElementById("reportDate").textContent = submission.reportDate ?? "-";
+            document.getElementById("status").textContent = submission.status ?? "-";
+            document.getElementById("autoResult").textContent = submission.autoResult ?? "-";
+            document.getElementById("managerResult").textContent = submission.managerResult ?? "-";
+            document.getElementById("createdBy").textContent = creator ? `${creator.employeeCode} - ${creator.fullName}` : submission.createdByUserId;
+            document.getElementById("performedBy").textContent = submission.performedByText || "-";
+            document.getElementById("managerNote").textContent = submission.managerNote || "-";
+            document.getElementById("submittedAt").textContent = formatDateTime(submission.submittedAt);
+            document.getElementById("evaluatedAt").textContent = formatDateTime(submission.evaluatedAt);
+            document.getElementById("approvedAt").textContent = formatDateTime(submission.approvedAt);
+        }
+
+        function renderFieldRows(fields, fieldValueMap) {
+            const tbody = document.getElementById("fieldRows");
+            tbody.innerHTML = fields.map((field) => {
+                const value = fieldValueMap.get(field.id);
+                return `
+                    <tr>
+                        <td>${field.displayOrder}</td>
+                        <td>${field.fieldCode}</td>
+                        <td>${field.fieldLabel}</td>
+                        <td>${field.dataType}</td>
+                        <td>${field.isRequired ? "Yes" : "No"}</td>
+                        <td>${escapeHtml(getDisplayValue(value))}</td>
+                        <td>${value?.autoResult ?? "-"}</td>
+                        <td>${escapeHtml(value?.evaluationNote ?? "-")}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function getDisplayValue(value) {
+            if (!value) {
+                return "-";
+            }
+
+            if (value.valueText !== null && value.valueText !== undefined && value.valueText !== "") {
+                return value.valueText;
+            }
+            if (value.valueNumber !== null && value.valueNumber !== undefined) {
+                return value.valueNumber.toString();
+            }
+            if (value.valueDate) {
+                return value.valueDate;
+            }
+            if (value.valueDateTime) {
+                return formatDateTime(value.valueDateTime);
+            }
+            if (value.valueBool !== null && value.valueBool !== undefined) {
+                return value.valueBool ? "true" : "false";
+            }
+            return "-";
+        }
+
+        function formatDateTime(value) {
+            if (!value) {
+                return "-";
+            }
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+
+            return date.toLocaleString();
+        }
+
+        async function apiGet(url) {
+            const response = await fetch(url);
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || JSON.stringify(body));
+            }
+            return body;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        function logDetail(value) {
+            const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            document.getElementById("detailLog").textContent = text;
+        }
+    </script>
+}

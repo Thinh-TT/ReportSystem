@@ -7,44 +7,54 @@
     <span class="text-muted">Review, evaluate, approve or reject submissions</span>
 </div>
 
-<div class="card shadow-sm mb-3">
-    <div class="card-body">
-        <h5 class="card-title">Filters</h5>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label" for="filterTemplateVersionId">Template Version</label>
-                <select class="form-select" id="filterTemplateVersionId">
-                    <option value="">All</option>
-                </select>
+<div class="accordion mb-3" id="managerAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingFilters">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTemplates" aria-expanded="true" aria-controls="collapseTemplates">
+                Filters
+            </button>
+        </h2>
+        <div id="collapseTemplates" class="accordion-collapse collapse show" aria-labelledby="headingFilters" data-bs-parent="#managerAccordion">
+            <div class="accordion-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label" for="filterTemplateVersionId">Template Version</label>
+                        <select class="form-select" id="filterTemplateVersionId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterStatus">Status</label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="">All</option>
+                            <option>DRAFT</option>
+                            <option>SUBMITTED</option>
+                            <option>AUTO_EVALUATED</option>
+                            <option>APPROVED</option>
+                            <option>REJECTED</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="filterCreatedByUserId">Created By</label>
+                        <select class="form-select" id="filterCreatedByUserId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterDateFrom">Date From</label>
+                        <input class="form-control" id="filterDateFrom" type="date" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="filterDateTo">Date To</label>
+                        <input class="form-control" id="filterDateTo" type="date" />
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button class="btn btn-primary" id="loadSubmissionsBtn" type="button">Load Submissions</button>
+                    <button class="btn btn-outline-secondary" id="removeDraftBtn" type="button">Remove Draft: OFF</button>
+                    <button class="btn btn-outline-info" id="todayBtn" type="button">ToDay</button>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label" for="filterStatus">Status</label>
-                <select class="form-select" id="filterStatus">
-                    <option value="">All</option>
-                    <option>DRAFT</option>
-                    <option>SUBMITTED</option>
-                    <option>AUTO_EVALUATED</option>
-                    <option>APPROVED</option>
-                    <option>REJECTED</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="filterCreatedByUserId">Created By</label>
-                <select class="form-select" id="filterCreatedByUserId">
-                    <option value="">All</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label" for="filterDateFrom">Date From</label>
-                <input class="form-control" id="filterDateFrom" type="date" />
-            </div>
-            <div class="col-md-2">
-                <label class="form-label" for="filterDateTo">Date To</label>
-                <input class="form-control" id="filterDateTo" type="date" />
-            </div>
-        </div>
-        <div class="mt-3">
-            <button class="btn btn-primary" id="loadSubmissionsBtn" type="button">Load Submissions</button>
         </div>
     </div>
 </div>
@@ -57,7 +67,7 @@
                 <thead>
                 <tr>
                     <th>Select</th>
-                    <th>ID</th>
+                    <th>Detail</th>
                     <th>No</th>
                     <th>Template Version</th>
                     <th>Date</th>
@@ -106,10 +116,18 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title">API Response Log</h5>
-        <pre class="bg-light p-3 mb-0" id="managerLog" style="max-height: 260px; overflow: auto;"></pre>
+<div class="accordion" id="managerLogAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingApiLog">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTemplatesLog" aria-expanded="false" aria-controls="collapseTemplatesLog">
+                API Response Log
+            </button>
+        </h2>
+        <div id="collapseTemplatesLog" class="accordion-collapse collapse" aria-labelledby="headingApiLog" data-bs-parent="#managerLogAccordion">
+            <div class="accordion-body">
+                <pre class="bg-light p-3 mb-0" id="managerLog" style="max-height: 260px; overflow: auto;"></pre>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -120,7 +138,8 @@
             templates: [],
             versions: [],
             submissions: [],
-            selectedSubmission: null
+            selectedSubmission: null,
+            removeDraft: false
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -130,6 +149,8 @@
 
         function bindManagerEvents() {
             document.getElementById("loadSubmissionsBtn").addEventListener("click", loadSubmissions);
+            document.getElementById("removeDraftBtn").addEventListener("click", toggleRemoveDraft);
+            document.getElementById("todayBtn").addEventListener("click", filterToday);
             document.getElementById("evaluateBtn").addEventListener("click", autoEvaluateSelected);
             document.getElementById("approveBtn").addEventListener("click", approveSelected);
             document.getElementById("rejectBtn").addEventListener("click", rejectSelected);
@@ -154,7 +175,10 @@
             try {
                 const query = buildSubmissionQuery();
                 const url = query ? `/api/submissions?${query}` : "/api/submissions";
-                managerState.submissions = await apiGet(url);
+                const all = await apiGet(url);
+                managerState.submissions = managerState.removeDraft
+                    ? all.filter((x) => x.status !== "DRAFT")
+                    : all;
                 renderSubmissionTable();
                 syncSelectedSubmissionState();
                 logManager(managerState.submissions);
@@ -179,6 +203,22 @@
             }
         }
 
+        function toggleRemoveDraft() {
+            managerState.removeDraft = !managerState.removeDraft;
+            const button = document.getElementById("removeDraftBtn");
+            button.textContent = managerState.removeDraft ? "Remove Draft: ON" : "Remove Draft: OFF";
+            button.classList.toggle("btn-outline-secondary", !managerState.removeDraft);
+            button.classList.toggle("btn-secondary", managerState.removeDraft);
+            loadSubmissions();
+        }
+
+        function filterToday() {
+            const today = new Date().toISOString().slice(0, 10);
+            document.getElementById("filterDateFrom").value = today;
+            document.getElementById("filterDateTo").value = today;
+            loadSubmissions();
+        }
+
         function renderManagerUserSelect() {
             const options = managerState.users
                 .map((x) => `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`)
@@ -196,10 +236,20 @@
             const publishedVersions = managerState.versions.filter((x) => x.status === "PUBLISHED");
             for (const version of publishedVersions) {
                 const template = managerState.templates.find((x) => x.id === version.templateId);
-                const code = template ? template.templateCode : `Template ${version.templateId}`;
-                options.push(`<option value="${version.id}">${code} - v${version.versionNo}</option>`);
+                const name = template ? template.templateName : `Template ${version.templateId}`;
+                options.push(`<option value="${version.id}">${name} - v${version.versionNo}</option>`);
             }
             document.getElementById("filterTemplateVersionId").innerHTML = options.join("");
+        }
+
+        function getTemplateNameByVersionId(templateVersionId) {
+            const version = managerState.versions.find((x) => x.id === templateVersionId);
+            if (!version) {
+                return `Template Version ${templateVersionId}`;
+            }
+
+            const template = managerState.templates.find((x) => x.id === version.templateId);
+            return template ? template.templateName : `Template ${version.templateId}`;
         }
 
         function renderSubmissionTable() {
@@ -207,9 +257,9 @@
             tbody.innerHTML = managerState.submissions.map((x) => `
                 <tr>
                     <td><button class="btn btn-sm btn-outline-secondary" type="button" onclick="selectSubmission(${x.submissionId})">Select</button></td>
-                    <td>${x.submissionId}</td>
+                    <td><button class="btn btn-sm btn-outline-primary" type="button" onclick="goToDetail(${x.submissionId})">Detail</button></td>
                     <td>${x.submissionNo}</td>
-                    <td>${x.templateVersionId}</td>
+                    <td>${escapeHtml(getTemplateNameByVersionId(x.templateVersionId))}</td>
                     <td>${x.reportDate}</td>
                     <td>${x.status}</td>
                     <td>${x.autoResult}</td>
@@ -221,6 +271,10 @@
         window.selectSubmission = (submissionId) => {
             managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === submissionId) || null;
             syncSelectedSubmissionState();
+        };
+
+        window.goToDetail = (submissionId) => {
+            window.location.href = `/submissions/${submissionId}`;
         };
 
         function syncSelectedSubmissionState() {
@@ -310,6 +364,15 @@
                 throw new Error(body.message || JSON.stringify(body));
             }
             return body;
+        }
+
+        function escapeHtml(value) {
+            return value
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&#39;");
         }
 
         function logManager(value) {
