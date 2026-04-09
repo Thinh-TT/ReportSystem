@@ -7,10 +7,23 @@ namespace ReportSystem.Infrastructure.Seed;
 public static class MinimalDataSeeder
 {
     private const string AdminRoleCode = "ADMIN";
+    private const string ManagerRoleCode = "MANAGER";
+    private const string EmployeeRoleCode = "EMPLOYEE";
+
     private const string AdminEmployeeCode = "ADMIN001";
     private const string AdminFullName = "System Administrator";
     private const string AdminEmail = "admin@reportsystem.local";
     private static readonly Guid AdminUserId = Guid.Parse("a6f8a419-df67-4c66-bf3b-84b7438f2de2");
+
+    private const string ManagerEmployeeCode = "MANAGER001";
+    private const string ManagerFullName = "Default Manager";
+    private const string ManagerEmail = "manager@reportsystem.local";
+    private static readonly Guid ManagerUserId = Guid.Parse("2f27efa4-c5f2-4c68-b300-a58bd26dc0b3");
+
+    private const string EmployeeEmployeeCode = "EMPLOYEE001";
+    private const string EmployeeFullName = "Default Employee";
+    private const string EmployeeEmail = "employee@reportsystem.local";
+    private static readonly Guid EmployeeUserId = Guid.Parse("27de669f-d982-45c8-9621-7322f3114aad");
 
     private static readonly RoleSeed[] RoleSeeds =
     {
@@ -121,7 +134,11 @@ public static class MinimalDataSeeder
 
         await SeedRolesAsync(dbContext, cancellationToken);
         var adminUser = await SeedAdminUserAsync(dbContext, utcNow, cancellationToken);
+        var managerUser = await SeedManagerUserAsync(dbContext, utcNow, cancellationToken);
+        var employeeUser = await SeedEmployeeUserAsync(dbContext, utcNow, cancellationToken);
         await SeedAdminRoleAsync(dbContext, adminUser.Id, cancellationToken);
+        await SeedUserRoleAsync(dbContext, managerUser.Id, ManagerRoleCode, cancellationToken);
+        await SeedUserRoleAsync(dbContext, employeeUser.Id, EmployeeRoleCode, cancellationToken);
         await SeedTemplatesAsync(dbContext, adminUser.Id, utcNow, cancellationToken);
     }
 
@@ -165,54 +182,44 @@ public static class MinimalDataSeeder
         DateTime utcNow,
         CancellationToken cancellationToken)
     {
-        var adminUser = await dbContext.Users
-            .SingleOrDefaultAsync(x => x.EmployeeCode == AdminEmployeeCode, cancellationToken);
+        return await UpsertUserAsync(
+            dbContext,
+            AdminUserId,
+            AdminEmployeeCode,
+            AdminFullName,
+            AdminEmail,
+            utcNow,
+            cancellationToken);
+    }
 
-        if (adminUser is null)
-        {
-            adminUser = new User
-            {
-                Id = AdminUserId,
-                EmployeeCode = AdminEmployeeCode,
-                FullName = AdminFullName,
-                Email = AdminEmail,
-                IsActive = true,
-                CreatedAt = utcNow,
-                UpdatedAt = utcNow
-            };
+    private static async Task<User> SeedManagerUserAsync(
+        ReportSystemDbContext dbContext,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        return await UpsertUserAsync(
+            dbContext,
+            ManagerUserId,
+            ManagerEmployeeCode,
+            ManagerFullName,
+            ManagerEmail,
+            utcNow,
+            cancellationToken);
+    }
 
-            dbContext.Users.Add(adminUser);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            return adminUser;
-        }
-
-        var hasChanges = false;
-
-        if (!string.Equals(adminUser.FullName, AdminFullName, StringComparison.Ordinal))
-        {
-            adminUser.FullName = AdminFullName;
-            hasChanges = true;
-        }
-
-        if (!string.Equals(adminUser.Email, AdminEmail, StringComparison.OrdinalIgnoreCase))
-        {
-            adminUser.Email = AdminEmail;
-            hasChanges = true;
-        }
-
-        if (!adminUser.IsActive)
-        {
-            adminUser.IsActive = true;
-            hasChanges = true;
-        }
-
-        if (hasChanges)
-        {
-            adminUser.UpdatedAt = utcNow;
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        return adminUser;
+    private static async Task<User> SeedEmployeeUserAsync(
+        ReportSystemDbContext dbContext,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        return await UpsertUserAsync(
+            dbContext,
+            EmployeeUserId,
+            EmployeeEmployeeCode,
+            EmployeeFullName,
+            EmployeeEmail,
+            utcNow,
+            cancellationToken);
     }
 
     private static async Task SeedAdminRoleAsync(
@@ -220,13 +227,22 @@ public static class MinimalDataSeeder
         Guid adminUserId,
         CancellationToken cancellationToken)
     {
-        var adminRoleId = await dbContext.Roles
-            .Where(x => x.Code == AdminRoleCode)
+        await SeedUserRoleAsync(dbContext, adminUserId, AdminRoleCode, cancellationToken);
+    }
+
+    private static async Task SeedUserRoleAsync(
+        ReportSystemDbContext dbContext,
+        Guid userId,
+        string roleCode,
+        CancellationToken cancellationToken)
+    {
+        var roleId = await dbContext.Roles
+            .Where(x => x.Code == roleCode)
             .Select(x => x.Id)
             .SingleAsync(cancellationToken);
 
         var hasRoleMapping = await dbContext.UserRoles
-            .AnyAsync(x => x.UserId == adminUserId && x.RoleId == adminRoleId, cancellationToken);
+            .AnyAsync(x => x.UserId == userId && x.RoleId == roleId, cancellationToken);
 
         if (hasRoleMapping)
         {
@@ -235,11 +251,70 @@ public static class MinimalDataSeeder
 
         dbContext.UserRoles.Add(new UserRole
         {
-            UserId = adminUserId,
-            RoleId = adminRoleId
+            UserId = userId,
+            RoleId = roleId
         });
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task<User> UpsertUserAsync(
+        ReportSystemDbContext dbContext,
+        Guid userId,
+        string employeeCode,
+        string fullName,
+        string email,
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users
+            .SingleOrDefaultAsync(x => x.EmployeeCode == employeeCode, cancellationToken);
+
+        if (user is null)
+        {
+            user = new User
+            {
+                Id = userId,
+                EmployeeCode = employeeCode,
+                FullName = fullName,
+                Email = email,
+                IsActive = true,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow
+            };
+
+            dbContext.Users.Add(user);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return user;
+        }
+
+        var hasChanges = false;
+
+        if (!string.Equals(user.FullName, fullName, StringComparison.Ordinal))
+        {
+            user.FullName = fullName;
+            hasChanges = true;
+        }
+
+        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        {
+            user.Email = email;
+            hasChanges = true;
+        }
+
+        if (!user.IsActive)
+        {
+            user.IsActive = true;
+            hasChanges = true;
+        }
+
+        if (hasChanges)
+        {
+            user.UpdatedAt = utcNow;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return user;
     }
 
     private static async Task SeedTemplatesAsync(

@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReportSystem.Domain.Entities;
 using ReportSystem.Infrastructure.Data;
+using ReportSystem.Web.Security;
 
 namespace ReportSystem.Web.Controllers.Management;
 
 [ApiController]
 [Route("api/management")]
+[Authorize]
 public sealed class IdentityManagementController : ControllerBase
 {
     private readonly ReportSystemDbContext _dbContext;
@@ -17,6 +20,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("users")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)
     {
         var users = await _dbContext.Users
@@ -28,6 +32,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("users/{id:guid}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetUser([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users
@@ -38,6 +43,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPost("users")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateUser([FromBody] UserUpsertRequest request, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
@@ -64,6 +70,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPut("users/{id:guid}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateUser(
         [FromRoute] Guid id,
         [FromBody] UserUpsertRequest request,
@@ -91,6 +98,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpDelete("users/{id:guid}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteUser([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var user = await _dbContext.Users.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -110,6 +118,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("roles")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> GetRoles(CancellationToken cancellationToken)
     {
         var roles = await _dbContext.Roles
@@ -121,6 +130,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("roles/{id:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> GetRole([FromRoute] int id, CancellationToken cancellationToken)
     {
         var role = await _dbContext.Roles
@@ -131,6 +141,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPost("roles")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateRole([FromBody] RoleUpsertRequest request, CancellationToken cancellationToken)
     {
         var role = new Role
@@ -150,6 +161,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPut("roles/{id:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateRole(
         [FromRoute] int id,
         [FromBody] RoleUpsertRequest request,
@@ -174,6 +186,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpDelete("roles/{id:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteRole([FromRoute] int id, CancellationToken cancellationToken)
     {
         var role = await _dbContext.Roles.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -193,6 +206,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("user-roles")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> GetUserRoles(CancellationToken cancellationToken)
     {
         var userRoles = await _dbContext.UserRoles
@@ -205,6 +219,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpGet("user-roles/{userId:guid}/{roleId:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> GetUserRole(
         [FromRoute] Guid userId,
         [FromRoute] int roleId,
@@ -218,6 +233,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPost("user-roles")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateUserRole([FromBody] UserRoleCreateRequest request, CancellationToken cancellationToken)
     {
         var userRole = new UserRole
@@ -240,6 +256,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpPut("user-roles/{userId:guid}/{roleId:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateUserRole(
         [FromRoute] Guid userId,
         [FromRoute] int roleId,
@@ -283,6 +300,7 @@ public sealed class IdentityManagementController : ControllerBase
     }
 
     [HttpDelete("user-roles/{userId:guid}/{roleId:int}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteUserRole(
         [FromRoute] Guid userId,
         [FromRoute] int roleId,

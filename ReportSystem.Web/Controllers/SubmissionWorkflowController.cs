@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReportSystem.Application.Services.Workflow;
+using ReportSystem.Web.Security;
 
 namespace ReportSystem.Web.Controllers;
 
 [ApiController]
 [Route("api/submissions")]
+[Authorize]
 public class SubmissionWorkflowController : ControllerBase
 {
     private readonly ISubmissionWorkflowService _workflowService;
@@ -15,6 +18,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> List([FromQuery] ListSubmissionsApiRequest request, CancellationToken cancellationToken)
     {
         var query = new SubmissionListQueryRequest
@@ -38,12 +42,14 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("draft")]
+    [Authorize(Roles = RoleGroups.EmployeeOrAdmin)]
     public async Task<IActionResult> CreateDraft([FromBody] CreateDraftSubmissionRequest request, CancellationToken cancellationToken)
     {
         return await ExecuteAsync(() => _workflowService.CreateDraftAsync(request, cancellationToken));
     }
 
     [HttpPut("{submissionId:long}/fields")]
+    [Authorize(Roles = RoleGroups.EmployeeOrAdmin)]
     public async Task<IActionResult> UpdateFieldValues(
         [FromRoute] long submissionId,
         [FromBody] UpdateFieldValuesApiRequest request,
@@ -59,6 +65,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("{submissionId:long}/submit")]
+    [Authorize(Roles = RoleGroups.EmployeeOrAdmin)]
     public async Task<IActionResult> Submit(
         [FromRoute] long submissionId,
         [FromBody] SubmitApiRequest request,
@@ -74,6 +81,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("{submissionId:long}/evaluate")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> AutoEvaluate([FromRoute] long submissionId, CancellationToken cancellationToken)
     {
         var request = new AutoEvaluateSubmissionRequest { SubmissionId = submissionId };
@@ -81,6 +89,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("{submissionId:long}/approve")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> Approve(
         [FromRoute] long submissionId,
         [FromBody] ApproveApiRequest request,
@@ -98,6 +107,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("{submissionId:long}/reject")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> Reject(
         [FromRoute] long submissionId,
         [FromBody] RejectApiRequest request,
@@ -114,6 +124,7 @@ public class SubmissionWorkflowController : ControllerBase
     }
 
     [HttpPost("{submissionId:long}/reopen")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> Reopen(
         [FromRoute] long submissionId,
         [FromBody] ReopenApiRequest request,

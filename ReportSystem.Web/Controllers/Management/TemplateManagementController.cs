@@ -1,14 +1,17 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReportSystem.Application.Services.Templates;
 using ReportSystem.Application.Services.Workflow;
 using ReportSystem.Domain.Entities;
 using ReportSystem.Infrastructure.Data;
+using ReportSystem.Web.Security;
 
 namespace ReportSystem.Web.Controllers.Management;
 
 [ApiController]
 [Route("api/management")]
+[Authorize]
 public sealed class TemplateManagementController : ControllerBase
 {
     private readonly ReportSystemDbContext _dbContext;
@@ -23,6 +26,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("report-templates")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplates(CancellationToken cancellationToken)
     {
         var templates = await _dbContext.ReportTemplates
@@ -34,6 +38,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("report-templates/{id:long}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplate([FromRoute] long id, CancellationToken cancellationToken)
     {
         var template = await _dbContext.ReportTemplates
@@ -44,6 +49,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPost("report-templates")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateTemplate([FromBody] ReportTemplateUpsertRequest request, CancellationToken cancellationToken)
     {
         try
@@ -67,6 +73,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPut("report-templates/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateTemplate(
         [FromRoute] long id,
         [FromBody] ReportTemplateUpsertRequest request,
@@ -98,6 +105,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpDelete("report-templates/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteTemplate([FromRoute] long id, CancellationToken cancellationToken)
     {
         var template = await _dbContext.ReportTemplates.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -117,6 +125,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("report-template-versions")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplateVersions(CancellationToken cancellationToken)
     {
         var versions = await _dbContext.ReportTemplateVersions
@@ -129,6 +138,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("report-template-versions/{id:long}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplateVersion([FromRoute] long id, CancellationToken cancellationToken)
     {
         var version = await _dbContext.ReportTemplateVersions
@@ -139,6 +149,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPost("report-template-versions")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateTemplateVersion(
         [FromBody] ReportTemplateVersionUpsertRequest request,
         CancellationToken cancellationToken)
@@ -167,6 +178,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPut("report-template-versions/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateTemplateVersion(
         [FromRoute] long id,
         [FromBody] ReportTemplateVersionUpsertRequest request,
@@ -201,6 +213,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpDelete("report-template-versions/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteTemplateVersion([FromRoute] long id, CancellationToken cancellationToken)
     {
         var version = await _dbContext.ReportTemplateVersions.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -220,6 +233,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("template-fields")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplateFields(CancellationToken cancellationToken)
     {
         var fields = await _dbContext.TemplateFields
@@ -232,6 +246,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("template-fields/{id:long}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetTemplateField([FromRoute] long id, CancellationToken cancellationToken)
     {
         var field = await _dbContext.TemplateFields
@@ -242,6 +257,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPost("template-fields")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateTemplateField(
         [FromBody] TemplateFieldUpsertRequest request,
         CancellationToken cancellationToken)
@@ -273,6 +289,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPut("template-fields/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateTemplateField(
         [FromRoute] long id,
         [FromBody] TemplateFieldUpsertRequest request,
@@ -310,6 +327,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpDelete("template-fields/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteTemplateField([FromRoute] long id, CancellationToken cancellationToken)
     {
         var field = await _dbContext.TemplateFields.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -329,6 +347,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("field-rules")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetFieldRules(CancellationToken cancellationToken)
     {
         var rules = await _dbContext.FieldRules
@@ -341,6 +360,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpGet("field-rules/{id:long}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetFieldRule([FromRoute] long id, CancellationToken cancellationToken)
     {
         var rule = await _dbContext.FieldRules
@@ -351,6 +371,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPost("field-rules")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateFieldRule(
         [FromBody] FieldRuleUpsertRequest request,
         CancellationToken cancellationToken)
@@ -382,6 +403,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpPut("field-rules/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateFieldRule(
         [FromRoute] long id,
         [FromBody] FieldRuleUpsertRequest request,
@@ -419,6 +441,7 @@ public sealed class TemplateManagementController : ControllerBase
     }
 
     [HttpDelete("field-rules/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteFieldRule([FromRoute] long id, CancellationToken cancellationToken)
     {
         var rule = await _dbContext.FieldRules.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);

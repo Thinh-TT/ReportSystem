@@ -1,0 +1,47 @@
+@model ReportSystem.Web.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title mb-3">Sign In</h3>
+                <p class="text-muted">
+                    Use your employee code to continue.
+                </p>
+
+                <form asp-action="Login" asp-controller="Account" method="post" asp-route-returnUrl="@returnUrl">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="EmployeeCode" class="form-label"></label>
+                        <input asp-for="EmployeeCode" class="form-control" autocomplete="username" />
+                        <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label"></label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+
+                <hr />
+                <div class="small text-muted">
+                    Seed users quick test:
+                    <div><code>ADMIN001</code> (ADMIN)</div>
+                    <div><code>MANAGER001</code> (MANAGER)</div>
+                    <div><code>EMPLOYEE001</code> (EMPLOYEE)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

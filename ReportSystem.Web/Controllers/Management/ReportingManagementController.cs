@@ -1,12 +1,15 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReportSystem.Domain.Entities;
 using ReportSystem.Infrastructure.Data;
+using ReportSystem.Web.Security;
 
 namespace ReportSystem.Web.Controllers.Management;
 
 [ApiController]
 [Route("api/management")]
+[Authorize]
 public sealed class ReportingManagementController : ControllerBase
 {
     private readonly ReportSystemDbContext _dbContext;
@@ -17,6 +20,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-submissions")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetSubmissions(CancellationToken cancellationToken)
     {
         var submissions = await _dbContext.ReportSubmissions
@@ -28,6 +32,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-submissions/{id:long}")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetSubmission([FromRoute] long id, CancellationToken cancellationToken)
     {
         var submission = await _dbContext.ReportSubmissions
@@ -38,6 +43,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPost("report-submissions")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateSubmission(
         [FromBody] ReportSubmissionUpsertRequest request,
         CancellationToken cancellationToken)
@@ -73,6 +79,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPut("report-submissions/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateSubmission(
         [FromRoute] long id,
         [FromBody] ReportSubmissionUpsertRequest request,
@@ -109,6 +116,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpDelete("report-submissions/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteSubmission([FromRoute] long id, CancellationToken cancellationToken)
     {
         var submission = await _dbContext.ReportSubmissions.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -128,6 +136,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-field-values")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetFieldValues(CancellationToken cancellationToken)
     {
         var values = await _dbContext.ReportFieldValues
@@ -140,6 +149,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-field-values/{id:long}")]
+    [Authorize(Roles = RoleGroups.AllRoles)]
     public async Task<IActionResult> GetFieldValue([FromRoute] long id, CancellationToken cancellationToken)
     {
         var fieldValue = await _dbContext.ReportFieldValues
@@ -150,6 +160,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPost("report-field-values")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateFieldValue(
         [FromBody] ReportFieldValueUpsertRequest request,
         CancellationToken cancellationToken)
@@ -183,6 +194,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPut("report-field-values/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateFieldValue(
         [FromRoute] long id,
         [FromBody] ReportFieldValueUpsertRequest request,
@@ -217,6 +229,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpDelete("report-field-values/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteFieldValue([FromRoute] long id, CancellationToken cancellationToken)
     {
         var fieldValue = await _dbContext.ReportFieldValues.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -236,6 +249,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-attachments")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetAttachments(CancellationToken cancellationToken)
     {
         var attachments = await _dbContext.ReportAttachments
@@ -247,6 +261,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("report-attachments/{id:long}")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetAttachment([FromRoute] long id, CancellationToken cancellationToken)
     {
         var attachment = await _dbContext.ReportAttachments
@@ -257,6 +272,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPost("report-attachments")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateAttachment(
         [FromBody] ReportAttachmentUpsertRequest request,
         CancellationToken cancellationToken)
@@ -284,6 +300,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPut("report-attachments/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateAttachment(
         [FromRoute] long id,
         [FromBody] ReportAttachmentUpsertRequest request,
@@ -313,6 +330,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpDelete("report-attachments/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteAttachment([FromRoute] long id, CancellationToken cancellationToken)
     {
         var attachment = await _dbContext.ReportAttachments.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -332,6 +350,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("approval-logs")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetApprovalLogs(CancellationToken cancellationToken)
     {
         var logs = await _dbContext.ApprovalLogs
@@ -343,6 +362,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpGet("approval-logs/{id:long}")]
+    [Authorize(Roles = RoleGroups.ManagerOrAdmin)]
     public async Task<IActionResult> GetApprovalLog([FromRoute] long id, CancellationToken cancellationToken)
     {
         var log = await _dbContext.ApprovalLogs
@@ -353,6 +373,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPost("approval-logs")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> CreateApprovalLog(
         [FromBody] ApprovalLogUpsertRequest request,
         CancellationToken cancellationToken)
@@ -380,6 +401,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpPut("approval-logs/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> UpdateApprovalLog(
         [FromRoute] long id,
         [FromBody] ApprovalLogUpsertRequest request,
@@ -410,6 +432,7 @@ public sealed class ReportingManagementController : ControllerBase
     }
 
     [HttpDelete("approval-logs/{id:long}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteApprovalLog([FromRoute] long id, CancellationToken cancellationToken)
     {
         var log = await _dbContext.ApprovalLogs.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);

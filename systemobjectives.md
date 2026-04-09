@@ -85,7 +85,7 @@
 
 ## 5) Hardening truoc production
 
-- [ ] Hoan thien authentication + authorization theo role.
+- [x] Hoan thien authentication + authorization theo role.
 - [ ] Them approval log day du cho moi transition.
 - [ ] Viet test:
 - [ ] Unit test cho rule engine.
@@ -95,7 +95,17 @@
 
 ## 6) Thu tu uu tien sprint gan nhat
 
+### Huong di moi (uu tien theo yeu cau hien tai)
+
+- [x] Uu tien 1: Authentication + Authorization theo role.
+- [ ] Uu tien 2: Attachment + Export.
+- [ ] Uu tien 3: Sua UI cho phu hop voi auth/attachment/export.
+
+### Ke hoach sprint cap nhat
+
 - [x] Sprint 1: Seed toi thieu.
 - [x] Sprint 2: Submission workflow end-to-end + CRUD quan tri toan bang (khong export).
-- [ ] Sprint 3: Rule engine hoan chinh + manager approval.
-- [ ] Sprint 4: Export + hardening co ban.
+- [x] Sprint 3: Authentication + Authorization theo role (protect API + UI by role).
+- [ ] Sprint 4: Attachment + Export (upload/list/filter/export Excel/PDF).
+- [ ] Sprint 5: UI refactor theo role, toi uu UX cho luong moi.
+- [ ] Sprint 6: Rule engine hoan chinh + manager approval nang cao.
