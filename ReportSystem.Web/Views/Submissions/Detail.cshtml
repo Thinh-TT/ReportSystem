@@ -8,7 +8,11 @@
         <h2 class="mb-0">Submission Detail</h2>
         <span class="text-muted">Submission ID: @submissionId</span>
     </div>
-    <a class="btn btn-outline-secondary" asp-controller="Manager" asp-action="Index">Back to Manager</a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-success" id="exportExcelBtn" type="button">Export Excel</button>
+        <button class="btn btn-outline-danger" id="exportPdfBtn" type="button">Export PDF</button>
+        <a class="btn btn-outline-secondary" asp-controller="Manager" asp-action="Index">Back to Manager</a>
+    </div>
 </div>
 
 <div class="card shadow-sm mb-3">
@@ -54,6 +58,26 @@
     </div>
 </div>
 
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Attachments</h5>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Captured At</th>
+                    <th>Created At</th>
+                </tr>
+                </thead>
+                <tbody id="attachmentRows"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-body">
         <h5 class="card-title">API Response Log</h5>
@@ -66,14 +90,21 @@
         const submissionId = @submissionId;
 
         document.addEventListener("DOMContentLoaded", () => {
+            bindActions();
             initializePage();
         });
+
+        function bindActions() {
+            document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
+            document.getElementById("exportPdfBtn").addEventListener("click", exportPdf);
+        }
 
         async function initializePage() {
             try {
                 const submission = await apiGet(`/api/management/report-submissions/${submissionId}`);
                 const allFieldValues = await apiGet("/api/management/report-field-values");
                 const allFields = await apiGet("/api/management/template-fields");
+                const attachments = await apiGet(`/api/submissions/${submissionId}/attachments`);
                 const versions = await apiGet("/api/management/report-template-versions");
                 const templates = await apiGet("/api/management/report-templates");
                 const users = await apiGet("/api/management/users");
@@ -96,7 +127,8 @@
                         .map((x) => [x.fieldId, x]));
 
                 renderFieldRows(fields, fieldValueMap);
-                logDetail({ submission, fieldsCount: fields.length });
+                renderAttachmentRows(attachments);
+                logDetail({ submission, fieldsCount: fields.length, attachmentsCount: attachments.length });
             } catch (error) {
                 logDetail(error.message);
             }
@@ -134,6 +166,27 @@
                     </tr>
                 `;
             }).join("");
+        }
+
+        function renderAttachmentRows(attachments) {
+            const tbody = document.getElementById("attachmentRows");
+            tbody.innerHTML = attachments.map((x) => `
+                <tr>
+                    <td>${escapeHtml(x.fileName ?? "-")}</td>
+                    <td>${escapeHtml(x.contentType ?? "-")}</td>
+                    <td>${x.fileSizeBytes ?? 0}</td>
+                    <td>${formatDateTime(x.capturedAt)}</td>
+                    <td>${formatDateTime(x.createdAt)}</td>
+                </tr>
+            `).join("");
+        }
+
+        function exportExcel() {
+            window.location.href = `/api/submissions/${submissionId}/export/excel`;
+        }
+
+        function exportPdf() {
+            window.location.href = `/api/submissions/${submissionId}/export/pdf`;
         }
 
         function getDisplayValue(value) {

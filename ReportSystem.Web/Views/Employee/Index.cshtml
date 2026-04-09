@@ -82,6 +82,40 @@
 
     <div class="card shadow-sm mt-3">
         <div class="card-body">
+            <h5 class="card-title">Step 4: Attachments</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="attachmentFile">Attachment File</label>
+                    <input class="form-control" id="attachmentFile" type="file" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="attachmentCapturedAt">Captured At</label>
+                    <input class="form-control" id="attachmentCapturedAt" type="datetime-local" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-primary w-100" id="uploadAttachmentBtn" type="button">Upload</button>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-3">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Captured At</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attachmentRows"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-body">
             <h5 class="card-title">API Response Log</h5>
             <pre class="bg-light p-3 mb-0" id="employeeLog" style="max-height: 260px; overflow: auto;"></pre>
         </div>
@@ -95,6 +129,7 @@
                     versions: [],
                     fields: [],
                     fieldValues: [],
+                    attachments: [],
                     draft: null,
                     draftTemplateVersionId: null
                 };
@@ -109,6 +144,7 @@
                     document.getElementById("createDraftBtn").addEventListener("click", createDraft);
                     document.getElementById("saveFieldValuesBtn").addEventListener("click", saveFieldValues);
                     document.getElementById("submitDraftBtn").addEventListener("click", submitDraft);
+                    document.getElementById("uploadAttachmentBtn").addEventListener("click", uploadAttachment);
                     document.getElementById("templateVersionId").addEventListener("change", renderFieldRows);
                 }
 
@@ -123,6 +159,7 @@
                         renderUserSelect("submitActionByUserId", employeeState.users);
                         renderTemplateVersionSelect();
                         renderFieldRows();
+                        renderAttachmentRows();
                         logEmployee("Initialization completed.");
                     } catch (error) {
                         logEmployee(error.message);
@@ -142,8 +179,10 @@
                         employeeState.draft = result;
                         employeeState.draftTemplateVersionId = payload.templateVersionId;
                         await loadDraftFieldValues();
+                        await loadDraftAttachments();
                         renderDraftSummary();
                         renderFieldRows();
+                        renderAttachmentRows();
                         logEmployee(result);
                     } catch (error) {
                         logEmployee(error.message);
@@ -166,8 +205,10 @@
 
                         employeeState.draft = result;
                         await loadDraftFieldValues();
+                        await loadDraftAttachments();
                         renderDraftSummary();
                         renderFieldRows();
+                        renderAttachmentRows();
                         logEmployee(result);
                     } catch (error) {
                         logEmployee(error.message);
@@ -186,7 +227,9 @@
                             actionByUserId
                         });
                         employeeState.draft = result;
+                        await loadDraftAttachments();
                         renderDraftSummary();
+                        renderAttachmentRows();
                         logEmployee(result);
                     } catch (error) {
                         logEmployee(error.message);
@@ -201,6 +244,15 @@
 
                     const allValues = await apiGet("/api/management/report-field-values");
                     employeeState.fieldValues = allValues.filter((x) => x.submissionId === employeeState.draft.submissionId);
+                }
+
+                async function loadDraftAttachments() {
+                    if (!employeeState.draft) {
+                        employeeState.attachments = [];
+                        return;
+                    }
+
+                    employeeState.attachments = await apiGet(`/api/submissions/${employeeState.draft.submissionId}/attachments`);
                 }
 
                 function renderUserSelect(elementId, users) {
@@ -252,6 +304,53 @@
                             </tr>
                         `;
                     }).join("");
+                }
+
+                function renderAttachmentRows() {
+                    const tbody = document.getElementById("attachmentRows");
+                    tbody.innerHTML = employeeState.attachments.map((x) => `
+                        <tr>
+                            <td>${escapeHtml(x.fileName ?? "-")}</td>
+                            <td>${escapeHtml(x.contentType ?? "-")}</td>
+                            <td>${x.fileSizeBytes ?? 0}</td>
+                            <td>${formatDateTime(x.capturedAt)}</td>
+                            <td>${formatDateTime(x.createdAt)}</td>
+                        </tr>
+                    `).join("");
+                }
+
+                async function uploadAttachment() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
+
+                    const fileInput = document.getElementById("attachmentFile");
+                    const capturedAtInput = document.getElementById("attachmentCapturedAt");
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        logEmployee("Please select an attachment file.");
+                        return;
+                    }
+
+                    try {
+                        const formData = new FormData();
+                        formData.append("file", fileInput.files[0]);
+                        if (capturedAtInput.value) {
+                            formData.append("capturedAt", new Date(capturedAtInput.value).toISOString());
+                        }
+
+                        const result = await apiSendForm(
+                            `/api/submissions/${employeeState.draft.submissionId}/attachments/upload`,
+                            "POST",
+                            formData);
+
+                        await loadDraftAttachments();
+                        renderAttachmentRows();
+                        fileInput.value = "";
+                        logEmployee(result);
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
                 }
 
                 function renderFieldInput(field, existingValue) {
@@ -307,6 +406,15 @@
                     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
                 }
 
+                function formatDateTime(value) {
+                    if (!value) {
+                        return "-";
+                    }
+
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+                }
+
                 function escapeHtml(value) {
                     return value
                         .replaceAll("&", "&amp;")
@@ -332,6 +440,15 @@
                         body: JSON.stringify(payload)
                     });
 
+                    const body = await response.json();
+                    if (!response.ok) {
+                        throw new Error(body.message || JSON.stringify(body));
+                    }
+                    return body;
+                }
+
+                async function apiSendForm(url, method, formData) {
+                    const response = await fetch(url, { method, body: formData });
                     const body = await response.json();
                     if (!response.ok) {
                         throw new Error(body.message || JSON.stringify(body));

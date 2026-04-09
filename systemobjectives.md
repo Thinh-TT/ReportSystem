@@ -78,10 +78,10 @@
 
 ## 4) Attachment + Export
 
-- [ ] Upload/luu metadata anh minh chung (`report_attachments`).
-- [ ] Danh sach bao cao co filter theo template, date, status, created_by.
-- [ ] Export Excel cho bao cao.
-- [ ] Export PDF (sau Excel).
+- [x] Upload/luu metadata anh minh chung (`report_attachments`).
+- [x] Danh sach bao cao co filter theo template, date, status, created_by.
+- [x] Export Excel cho bao cao.
+- [x] Export PDF (sau Excel).
 
 ## 5) Hardening truoc production
 
@@ -98,7 +98,7 @@
 ### Huong di moi (uu tien theo yeu cau hien tai)
 
 - [x] Uu tien 1: Authentication + Authorization theo role.
-- [ ] Uu tien 2: Attachment + Export.
+- [x] Uu tien 2: Attachment + Export.
 - [ ] Uu tien 3: Sua UI cho phu hop voi auth/attachment/export.
 
 ### Ke hoach sprint cap nhat
@@ -106,6 +106,6 @@
 - [x] Sprint 1: Seed toi thieu.
 - [x] Sprint 2: Submission workflow end-to-end + CRUD quan tri toan bang (khong export).
 - [x] Sprint 3: Authentication + Authorization theo role (protect API + UI by role).
-- [ ] Sprint 4: Attachment + Export (upload/list/filter/export Excel/PDF).
+- [x] Sprint 4: Attachment + Export (upload/list/filter/export Excel/PDF).
 - [ ] Sprint 5: UI refactor theo role, toi uu UX cho luong moi.
 - [ ] Sprint 6: Rule engine hoan chinh + manager approval nang cao.
