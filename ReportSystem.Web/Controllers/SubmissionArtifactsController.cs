@@ -250,18 +250,12 @@ public sealed class SubmissionArtifactsController : ControllerBase
             where field.TemplateVersionId == submission.TemplateVersionId
             orderby field.DisplayOrder
             select new ExportFieldRow(
-                field.DisplayOrder,
-                field.FieldCode,
                 field.FieldLabel,
-                field.DataType,
-                field.IsRequired,
                 value != null ? value.ValueText : null,
                 value != null ? value.ValueNumber : null,
                 value != null ? value.ValueDate : null,
                 value != null ? value.ValueDateTime : null,
-                value != null ? value.ValueBool : null,
-                value != null ? value.AutoResult : null,
-                value != null ? value.EvaluationNote : null))
+                value != null ? value.ValueBool : null))
             .ToListAsync(cancellationToken);
 
         return new ExportReport(
@@ -325,20 +319,11 @@ public sealed class SubmissionArtifactsController : ControllerBase
         AppendRow(sb, "Evaluated At", report.EvaluatedAt?.ToString("u", CultureInfo.InvariantCulture) ?? string.Empty);
         AppendRow(sb, "Approved At", report.ApprovedAt?.ToString("u", CultureInfo.InvariantCulture) ?? string.Empty);
         AppendRow(sb, string.Empty, string.Empty);
-        AppendRow(sb, "Order", "Code", "Label", "Type", "Required", "Value", "Auto", "Evaluation Note");
+        AppendRow(sb, "Label", "Value");
 
         foreach (var row in report.Fields)
         {
-            AppendRow(
-                sb,
-                row.DisplayOrder.ToString(CultureInfo.InvariantCulture),
-                row.FieldCode,
-                row.FieldLabel,
-                row.DataType,
-                row.IsRequired ? "Yes" : "No",
-                GetFieldDisplayValue(row),
-                row.AutoResult ?? string.Empty,
-                row.EvaluationNote ?? string.Empty);
+            AppendRow(sb, row.FieldLabel, GetFieldDisplayValue(row));
         }
 
         sb.Append("</Table></Worksheet></Workbook>");
@@ -362,7 +347,7 @@ public sealed class SubmissionArtifactsController : ControllerBase
         };
 
         lines.AddRange(report.Fields.Select(row =>
-            $"{row.DisplayOrder}. {row.FieldCode} ({row.DataType}) = {GetFieldDisplayValue(row)} | Auto={row.AutoResult ?? "-"}"));
+            $"{row.FieldLabel}: {GetFieldDisplayValue(row)}"));
 
         return BuildSimplePdf(lines);
     }
@@ -504,16 +489,10 @@ public sealed class SubmissionArtifactsController : ControllerBase
         IReadOnlyCollection<ExportFieldRow> Fields);
 
     private sealed record ExportFieldRow(
-        int DisplayOrder,
-        string FieldCode,
         string FieldLabel,
-        string DataType,
-        bool IsRequired,
         string? ValueText,
         decimal? ValueNumber,
         DateOnly? ValueDate,
         DateTime? ValueDateTime,
-        bool? ValueBool,
-        string? AutoResult,
-        string? EvaluationNote);
+        bool? ValueBool);
 }

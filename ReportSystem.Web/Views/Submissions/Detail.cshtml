@@ -42,14 +42,8 @@
             <table class="table table-striped align-middle mb-0">
                 <thead>
                 <tr>
-                    <th>Order</th>
-                    <th>Code</th>
                     <th>Label</th>
-                    <th>Type</th>
-                    <th>Required</th>
                     <th>Value</th>
-                    <th>Auto</th>
-                    <th>Evaluation Note</th>
                 </tr>
                 </thead>
                 <tbody id="fieldRows"></tbody>
@@ -79,10 +73,18 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title">API Response Log</h5>
-        <pre class="bg-light p-3 mb-0" id="detailLog" style="max-height: 280px; overflow: auto;"></pre>
+<div class="accordion" id="detailLogAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingApiLog">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTemplates" aria-expanded="false" aria-controls="collapseTemplates">
+                API Response Log
+            </button>
+        </h2>
+        <div id="collapseTemplates" class="accordion-collapse collapse" aria-labelledby="headingApiLog" data-bs-parent="#detailLogAccordion">
+            <div class="accordion-body">
+                <pre class="bg-light p-3 mb-0" id="detailLog" style="max-height: 280px; overflow: auto;"></pre>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -156,14 +158,8 @@
                 const value = fieldValueMap.get(field.id);
                 return `
                     <tr>
-                        <td>${field.displayOrder}</td>
-                        <td>${field.fieldCode}</td>
                         <td>${field.fieldLabel}</td>
-                        <td>${field.dataType}</td>
-                        <td>${field.isRequired ? "Yes" : "No"}</td>
                         <td>${escapeHtml(getDisplayValue(value))}</td>
-                        <td>${value?.autoResult ?? "-"}</td>
-                        <td>${escapeHtml(value?.evaluationNote ?? "-")}</td>
                     </tr>
                 `;
             }).join("");

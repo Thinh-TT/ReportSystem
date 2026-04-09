@@ -109,3 +109,16 @@
 - [x] Sprint 4: Attachment + Export (upload/list/filter/export Excel/PDF).
 - [x] Sprint 5: UI refactor theo role, toi uu UX cho luong moi.
 - [ ] Sprint 6: Rule engine hoan chinh + manager approval nang cao.
+
+## 7) Manager Workspace - Export danh sach theo template_name + thoi gian
+
+- [ ] Chot contract API export list: filter bat buoc `template_name`, `from_date`, `to_date`; filter tuy chon `status`, `created_by`.
+- [ ] Chuan hoa input thoi gian theo UTC, quy dinh ro inclusive range (`from_date <= report_date <= to_date`).
+- [ ] Query danh sach tu `report_submissions` + join `report_template_versions` + `report_templates` de lay `template_name`.f
+- [ ] Bo sung endpoint export list (Excel truoc): `GET /api/manager/submissions/export`.
+- [ ] Thong nhat cot xuat file: `No`, `Template Name`, `Report Date`, `Status`, `Auto`, `Manager`, `Created By`, `Submitted At`, `Approved At`.
+- [ ] Them khu vuc Export o Manager Workspace: chon `template_name`, `from/to`, nut `Export List`.
+- [ ] Validate nghiep vu: chan export khi thieu filter bat buoc, chan khoang thoi gian khong hop le (`from > to`).
+- [ ] Authorization: chi role `MANAGER` va `ADMIN` duoc export danh sach.
+- [ ] Logging/audit: ghi nhan nguoi export, bo loc da dung, thoi diem export.
+- [ ] Test: integration test cho API export + smoke test UI Manager (happy path + invalid range).

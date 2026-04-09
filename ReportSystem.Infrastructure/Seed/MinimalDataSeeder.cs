@@ -35,8 +35,8 @@ public static class MinimalDataSeeder
     private static readonly TemplateSeed[] TemplateSeeds =
     {
         new(
-            "PH_METER_DAILY_CHECK",
-            "PH Meter Daily Check",
+            "0403_PH_METER_DAILY_CHECK",
+            "0403_PH Meter Daily Check",
             "Daily verification checklist for pH meter.",
             new[]
             {
@@ -63,8 +63,8 @@ public static class MinimalDataSeeder
                 new FieldSeed("remark", "Remark", "TEXT", null, false, 9, null, null, Array.Empty<RuleSeed>())
             }),
         new(
-            "DISTILLED_WATER_QUALITY_CHECK",
-            "Distilled Water Quality Check",
+            "0398_DISTILLED_WATER_QUALITY_CHECK",
+            "0398_Distilled Water Quality Check",
             "Quality control checklist for distilled water.",
             new[]
             {
@@ -124,7 +124,8 @@ public static class MinimalDataSeeder
                     }),
                 new FieldSeed("conclusion", "Conclusion", "TEXT", null, false, 7, null, null, Array.Empty<RuleSeed>()),
                 new FieldSeed("performed_by", "Performed By", "TEXT", null, false, 8, null, null, Array.Empty<RuleSeed>()),
-                new FieldSeed("remark", "Remark", "TEXT", null, false, 9, null, null, Array.Empty<RuleSeed>())
+                new FieldSeed("remark", "Remark", "TEXT", null, false, 9, null, null, Array.Empty<RuleSeed>()),
+                new FieldSeed("equipment", "Equipment", "TEXT", null, false, 10, null, null, Array.Empty<RuleSeed>())
             })
     };
 

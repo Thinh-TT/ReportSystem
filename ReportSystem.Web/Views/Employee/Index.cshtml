@@ -53,468 +53,469 @@
                     <select class="form-select" id="submitActionByUserId"></select>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-outline-primary" id="saveFieldValuesBtn" type="button">Save Field Values</button>
-                    <button class="btn btn-success" id="submitDraftBtn" type="button">Submit Draft</button>
-                    <button class="btn btn-outline-success" id="exportExcelBtn" type="button">Export Excel</button>
-                    <button class="btn btn-outline-danger" id="exportPdfBtn" type="button">Export PDF</button>
+                    <button class="btn btn-outline-primary" id="saveFieldValuesBtn" type="button">Save Field
+                        Values</button>
+                        <button class="btn btn-success" id="submitDraftBtn" type="button">Submit Draft</button>
+                        <button class="btn btn-outline-success" id="exportExcelBtn" type="button">Export Excel</button>
+                        <button class="btn btn-outline-danger" id="exportPdfBtn" type="button">Export PDF</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="card workspace-card mt-3">
-    <div class="card-body">
-        <h5 class="card-title">Step 2: Field Values</h5>
-        <div class="table-responsive">
-            <table class="table table-striped align-middle mb-0" id="fieldsTable">
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th>Code</th>
-                        <th>Label</th>
-                        <th>Type</th>
-                        <th>Required</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div class="card workspace-card mt-3">
-    <div class="card-body">
-        <h5 class="card-title">Step 3: Attachments</h5>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="attachmentFile">Attachment File</label>
-                <input class="form-control" id="attachmentFile" type="file" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="attachmentCapturedAt">Captured At</label>
-                <input class="form-control" id="attachmentCapturedAt" type="datetime-local" />
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-outline-primary w-100" id="uploadAttachmentBtn" type="button">Upload</button>
+    <div class="card workspace-card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Step 2: Field Values</h5>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0" id="fieldsTable">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Code</th>
+                            <th>Label</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-        <div class="table-responsive mt-3">
-            <table class="table table-striped align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>File Name</th>
-                        <th>Type</th>
-                        <th>Size</th>
-                        <th>Captured At</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody id="attachmentRows"></tbody>
-            </table>
+    <div class="card workspace-card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Step 3: Attachments</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="attachmentFile">Attachment File</label>
+                    <input class="form-control" id="attachmentFile" type="file" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="attachmentCapturedAt">Captured At</label>
+                    <input class="form-control" id="attachmentCapturedAt" type="datetime-local" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-primary w-100" id="uploadAttachmentBtn" type="button">Upload</button>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-3">
+                <table class="table table-striped align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Captured At</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attachmentRows"></tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="card workspace-card mt-3">
-    <div class="card-body">
-        <h5 class="card-title">API Response Log</h5>
-        <pre class="bg-light p-3 mb-0" id="employeeLog" style="max-height: 280px; overflow: auto;"></pre>
+    <div class="card workspace-card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">API Response Log</h5>
+            <pre class="bg-light p-3 mb-0" id="employeeLog" style="max-height: 280px; overflow: auto;"></pre>
+        </div>
     </div>
-</div>
 
-@section Scripts {
-    <script>
-        const employeeState = {
-            users: [],
-            templates: [],
-            versions: [],
-            fields: [],
-            fieldValues: [],
-            attachments: [],
-            draft: null,
-            draftTemplateVersionId: null
-        };
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("reportDate").valueAsDate = new Date();
-            bindEmployeeEvents();
-            initializeEmployeePage();
-        });
-
-        function bindEmployeeEvents() {
-            document.getElementById("createDraftBtn").addEventListener("click", createDraft);
-            document.getElementById("resetDraftBtn").addEventListener("click", resetDraftState);
-            document.getElementById("saveFieldValuesBtn").addEventListener("click", saveFieldValues);
-            document.getElementById("submitDraftBtn").addEventListener("click", submitDraft);
-            document.getElementById("uploadAttachmentBtn").addEventListener("click", uploadAttachment);
-            document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
-            document.getElementById("exportPdfBtn").addEventListener("click", exportPdf);
-            document.getElementById("templateVersionId").addEventListener("change", renderFieldRows);
-        }
-
-        async function initializeEmployeePage() {
-            try {
-                employeeState.users = await apiGet("/api/management/users");
-                employeeState.templates = await apiGet("/api/management/report-templates");
-                employeeState.versions = await apiGet("/api/management/report-template-versions");
-                employeeState.fields = await apiGet("/api/management/template-fields");
-
-                renderUserSelect("createdByUserId", employeeState.users);
-                renderUserSelect("submitActionByUserId", employeeState.users);
-                renderTemplateVersionSelect();
-                renderFieldRows();
-                renderAttachmentRows();
-                syncActionState();
-                logEmployee("Initialization completed.");
-            } catch (error) {
-                logEmployee(error.message);
-            }
-        }
-
-        function resetDraftState() {
-            employeeState.draft = null;
-            employeeState.fieldValues = [];
-            employeeState.attachments = [];
-            employeeState.draftTemplateVersionId = null;
-            renderDraftSummary();
-            renderFieldRows();
-            renderAttachmentRows();
-            syncActionState();
-            logEmployee("Draft state reset.");
-        }
-
-        async function createDraft() {
-            try {
-                const payload = {
-                    templateVersionId: Number(document.getElementById("templateVersionId").value),
-                    reportDate: document.getElementById("reportDate").value,
-                    createdByUserId: document.getElementById("createdByUserId").value,
-                    performedByText: document.getElementById("performedByText").value
+    @section Scripts {
+        <script>
+                const employeeState = {
+                    users: [],
+                    templates: [],
+                    versions: [],
+                    fields: [],
+                    fieldValues: [],
+                    attachments: [],
+                    draft: null,
+                    draftTemplateVersionId: null
                 };
 
-                const result = await apiSend("/api/submissions/draft", "POST", payload);
-                employeeState.draft = result;
-                employeeState.draftTemplateVersionId = payload.templateVersionId;
-                await loadDraftFieldValues();
-                await loadDraftAttachments();
-                renderDraftSummary();
-                renderFieldRows();
-                renderAttachmentRows();
-                syncActionState();
-                logEmployee(result);
-            } catch (error) {
-                logEmployee(error.message);
-            }
-        }
-
-        async function saveFieldValues() {
-            if (!employeeState.draft) {
-                logEmployee("Please create draft first.");
-                return;
-            }
-
-            try {
-                const rows = Array.from(document.querySelectorAll("#fieldsTable tbody tr"));
-                const fieldValues = rows.map((row) => buildFieldValuePayload(row));
-
-                const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/fields`, "PUT", { fieldValues });
-
-                employeeState.draft = result;
-                await loadDraftFieldValues();
-                await loadDraftAttachments();
-                renderDraftSummary();
-                renderFieldRows();
-                renderAttachmentRows();
-                syncActionState();
-                logEmployee(result);
-            } catch (error) {
-                logEmployee(error.message);
-            }
-        }
-
-        async function submitDraft() {
-            if (!employeeState.draft) {
-                logEmployee("Please create draft first.");
-                return;
-            }
-
-            try {
-                const actionByUserId = document.getElementById("submitActionByUserId").value;
-                const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/submit`, "POST", { actionByUserId });
-                employeeState.draft = result;
-                await loadDraftAttachments();
-                renderDraftSummary();
-                renderAttachmentRows();
-                syncActionState();
-                logEmployee(result);
-            } catch (error) {
-                logEmployee(error.message);
-            }
-        }
-
-        async function uploadAttachment() {
-            if (!employeeState.draft) {
-                logEmployee("Please create draft first.");
-                return;
-            }
-
-            const fileInput = document.getElementById("attachmentFile");
-            const capturedAtInput = document.getElementById("attachmentCapturedAt");
-            if (!fileInput.files || fileInput.files.length === 0) {
-                logEmployee("Please select an attachment file.");
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append("file", fileInput.files[0]);
-                if (capturedAtInput.value) {
-                    formData.append("capturedAt", new Date(capturedAtInput.value).toISOString());
-                }
-
-                const result = await apiSendForm(
-                    `/api/submissions/${employeeState.draft.submissionId}/attachments/upload`,
-                    "POST",
-                    formData);
-
-                await loadDraftAttachments();
-                renderAttachmentRows();
-                syncActionState();
-                fileInput.value = "";
-                logEmployee(result);
-            } catch (error) {
-                logEmployee(error.message);
-            }
-        }
-
-        function exportExcel() {
-            if (!employeeState.draft) {
-                logEmployee("Please create draft first.");
-                return;
-            }
-
-            window.location.href = `/api/submissions/${employeeState.draft.submissionId}/export/excel`;
-        }
-
-        function exportPdf() {
-            if (!employeeState.draft) {
-                logEmployee("Please create draft first.");
-                return;
-            }
-
-            window.location.href = `/api/submissions/${employeeState.draft.submissionId}/export/pdf`;
-        }
-
-        async function loadDraftFieldValues() {
-            if (!employeeState.draft) {
-                employeeState.fieldValues = [];
-                return;
-            }
-
-            const allValues = await apiGet("/api/management/report-field-values");
-            employeeState.fieldValues = allValues.filter((x) => x.submissionId === employeeState.draft.submissionId);
-        }
-
-        async function loadDraftAttachments() {
-            if (!employeeState.draft) {
-                employeeState.attachments = [];
-                return;
-            }
-
-            employeeState.attachments = await apiGet(`/api/submissions/${employeeState.draft.submissionId}/attachments`);
-        }
-
-        function renderUserSelect(elementId, users) {
-            const select = document.getElementById(elementId);
-            select.innerHTML = users.map((x) =>
-                `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`).join("");
-        }
-
-        function renderTemplateVersionSelect() {
-            const select = document.getElementById("templateVersionId");
-            const versionOptions = employeeState.versions
-                .filter((x) => x.status === "PUBLISHED")
-                .map((x) => {
-                    const template = employeeState.templates.find((t) => t.id === x.templateId);
-                    const templateCode = template ? template.templateCode : `Template ${x.templateId}`;
-                    return `<option value="${x.id}">${templateCode} - v${x.versionNo}</option>`;
+                document.addEventListener("DOMContentLoaded", () => {
+                    document.getElementById("reportDate").valueAsDate = new Date();
+                    bindEmployeeEvents();
+                    initializeEmployeePage();
                 });
 
-            select.innerHTML = versionOptions.join("");
-        }
+                function bindEmployeeEvents() {
+                    document.getElementById("createDraftBtn").addEventListener("click", createDraft);
+                    document.getElementById("resetDraftBtn").addEventListener("click", resetDraftState);
+                    document.getElementById("saveFieldValuesBtn").addEventListener("click", saveFieldValues);
+                    document.getElementById("submitDraftBtn").addEventListener("click", submitDraft);
+                    document.getElementById("uploadAttachmentBtn").addEventListener("click", uploadAttachment);
+                    document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
+                    document.getElementById("exportPdfBtn").addEventListener("click", exportPdf);
+                    document.getElementById("templateVersionId").addEventListener("change", renderFieldRows);
+                }
 
-        function renderDraftSummary() {
-            document.getElementById("draftSubmissionId").textContent = employeeState.draft ? employeeState.draft.submissionId : "-";
-            document.getElementById("draftSubmissionNo").textContent = employeeState.draft ? employeeState.draft.submissionNo : "-";
-            document.getElementById("draftStatus").innerHTML = employeeState.draft
-                ? `<span class="status-pill status-${employeeState.draft.status.toLowerCase()}">${employeeState.draft.status}</span>`
-                : "-";
-        }
+                async function initializeEmployeePage() {
+                    try {
+                        employeeState.users = await apiGet("/api/management/users");
+                        employeeState.templates = await apiGet("/api/management/report-templates");
+                        employeeState.versions = await apiGet("/api/management/report-template-versions");
+                        employeeState.fields = await apiGet("/api/management/template-fields");
 
-        function renderFieldRows() {
-            const selectedVersionId = employeeState.draftTemplateVersionId
-                ?? Number(document.getElementById("templateVersionId").value);
+                        renderUserSelect("createdByUserId", employeeState.users);
+                        renderUserSelect("submitActionByUserId", employeeState.users);
+                        renderTemplateVersionSelect();
+                        renderFieldRows();
+                        renderAttachmentRows();
+                        syncActionState();
+                        logEmployee("Initialization completed.");
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
+                }
 
-            const fields = employeeState.fields
-                .filter((x) => x.templateVersionId === selectedVersionId)
-                .sort((a, b) => a.displayOrder - b.displayOrder);
+                function resetDraftState() {
+                    employeeState.draft = null;
+                    employeeState.fieldValues = [];
+                    employeeState.attachments = [];
+                    employeeState.draftTemplateVersionId = null;
+                    renderDraftSummary();
+                    renderFieldRows();
+                    renderAttachmentRows();
+                    syncActionState();
+                    logEmployee("Draft state reset.");
+                }
 
-            const fieldValueMap = new Map(employeeState.fieldValues.map((x) => [x.fieldId, x]));
+                async function createDraft() {
+                    try {
+                        const payload = {
+                            templateVersionId: Number(document.getElementById("templateVersionId").value),
+                            reportDate: document.getElementById("reportDate").value,
+                            createdByUserId: document.getElementById("createdByUserId").value,
+                            performedByText: document.getElementById("performedByText").value
+                        };
 
-            const tbody = document.querySelector("#fieldsTable tbody");
-            tbody.innerHTML = fields.map((field) => {
-                const existing = fieldValueMap.get(field.id);
-                return `
-                    <tr data-field-id="${field.id}" data-data-type="${field.dataType}">
-                        <td>${field.displayOrder}</td>
-                        <td>${field.fieldCode}</td>
-                        <td>${field.fieldLabel}</td>
-                        <td>${field.dataType}</td>
-                        <td>${field.isRequired ? "Yes" : "No"}</td>
-                        <td>${renderFieldInput(field, existing)}</td>
-                    </tr>
-                `;
-            }).join("");
-        }
+                        const result = await apiSend("/api/submissions/draft", "POST", payload);
+                        employeeState.draft = result;
+                        employeeState.draftTemplateVersionId = payload.templateVersionId;
+                        await loadDraftFieldValues();
+                        await loadDraftAttachments();
+                        renderDraftSummary();
+                        renderFieldRows();
+                        renderAttachmentRows();
+                        syncActionState();
+                        logEmployee(result);
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
+                }
 
-        function renderAttachmentRows() {
-            const tbody = document.getElementById("attachmentRows");
-            if (employeeState.attachments.length === 0) {
-                tbody.innerHTML = "<tr><td colspan=\"5\" class=\"text-muted\">No attachment uploaded.</td></tr>";
-                return;
-            }
+                async function saveFieldValues() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
 
-            tbody.innerHTML = employeeState.attachments.map((x) => `
-                <tr>
-                    <td>${escapeHtml(x.fileName ?? "-")}</td>
-                    <td>${escapeHtml(x.contentType ?? "-")}</td>
-                    <td>${x.fileSizeBytes ?? 0}</td>
-                    <td>${formatDateTime(x.capturedAt)}</td>
-                    <td>${formatDateTime(x.createdAt)}</td>
-                </tr>
-            `).join("");
-        }
+                    try {
+                        const rows = Array.from(document.querySelectorAll("#fieldsTable tbody tr"));
+                        const fieldValues = rows.map((row) => buildFieldValuePayload(row));
 
-        function renderFieldInput(field, existingValue) {
-            const dataType = field.dataType;
-            if (dataType === "NUMBER") {
-                return `<input class="form-control" type="number" step="any" value="${existingValue?.valueNumber ?? ""}" />`;
-            }
-            if (dataType === "DATE") {
-                const value = existingValue?.valueDate ?? "";
-                return `<input class="form-control" type="date" value="${value}" />`;
-            }
-            if (dataType === "DATETIME") {
-                const dateTime = existingValue?.valueDateTime ? toDateTimeLocal(existingValue.valueDateTime) : "";
-                return `<input class="form-control" type="datetime-local" value="${dateTime}" />`;
-            }
-            if (dataType === "BOOLEAN") {
-                const selected = existingValue?.valueBool;
-                return `
-                    <select class="form-select">
-                        <option value="">-- Select --</option>
-                        <option value="true" ${selected === true ? "selected" : ""}>True</option>
-                        <option value="false" ${selected === false ? "selected" : ""}>False</option>
-                    </select>
-                `;
-            }
-            return `<input class="form-control" value="${escapeHtml(existingValue?.valueText ?? "")}" />`;
-        }
+                        const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/fields`, "PUT", { fieldValues });
 
-        function buildFieldValuePayload(row) {
-            const fieldId = Number(row.dataset.fieldId);
-            const dataType = row.dataset.dataType;
-            const input = row.querySelector("input, select");
+                        employeeState.draft = result;
+                        await loadDraftFieldValues();
+                        await loadDraftAttachments();
+                        renderDraftSummary();
+                        renderFieldRows();
+                        renderAttachmentRows();
+                        syncActionState();
+                        logEmployee(result);
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
+                }
 
-            const payload = { fieldId };
-            if (dataType === "NUMBER") {
-                payload.valueNumber = input.value === "" ? null : Number(input.value);
-            } else if (dataType === "DATE") {
-                payload.valueDate = input.value || null;
-            } else if (dataType === "DATETIME") {
-                payload.valueDateTime = input.value ? new Date(input.value).toISOString() : null;
-            } else if (dataType === "BOOLEAN") {
-                payload.valueBool = input.value === "" ? null : input.value === "true";
-            } else {
-                payload.valueText = input.value || null;
-            }
+                async function submitDraft() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
 
-            return payload;
-        }
+                    try {
+                        const actionByUserId = document.getElementById("submitActionByUserId").value;
+                        const result = await apiSend(`/api/submissions/${employeeState.draft.submissionId}/submit`, "POST", { actionByUserId });
+                        employeeState.draft = result;
+                        await loadDraftAttachments();
+                        renderDraftSummary();
+                        renderAttachmentRows();
+                        syncActionState();
+                        logEmployee(result);
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
+                }
 
-        function syncActionState() {
-            const hasDraft = !!employeeState.draft;
-            const status = employeeState.draft?.status ?? "";
+                async function uploadAttachment() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
 
-            document.getElementById("saveFieldValuesBtn").disabled = !hasDraft || status !== "DRAFT";
-            document.getElementById("submitDraftBtn").disabled = !hasDraft || status !== "DRAFT";
-            document.getElementById("uploadAttachmentBtn").disabled = !hasDraft;
-            document.getElementById("exportExcelBtn").disabled = !hasDraft;
-            document.getElementById("exportPdfBtn").disabled = !hasDraft;
-        }
+                    const fileInput = document.getElementById("attachmentFile");
+                    const capturedAtInput = document.getElementById("attachmentCapturedAt");
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        logEmployee("Please select an attachment file.");
+                        return;
+                    }
 
-        function toDateTimeLocal(isoDateTime) {
-            const date = new Date(isoDateTime);
-            const pad = (n) => n.toString().padStart(2, "0");
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-        }
+                    try {
+                        const formData = new FormData();
+                        formData.append("file", fileInput.files[0]);
+                        if (capturedAtInput.value) {
+                            formData.append("capturedAt", new Date(capturedAtInput.value).toISOString());
+                        }
 
-        function formatDateTime(value) {
-            if (!value) {
-                return "-";
-            }
+                        const result = await apiSendForm(
+                            `/api/submissions/${employeeState.draft.submissionId}/attachments/upload`,
+                            "POST",
+                            formData);
 
-            const date = new Date(value);
-            return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-        }
+                        await loadDraftAttachments();
+                        renderAttachmentRows();
+                        syncActionState();
+                        fileInput.value = "";
+                        logEmployee(result);
+                    } catch (error) {
+                        logEmployee(error.message);
+                    }
+                }
 
-        function escapeHtml(value) {
-            return String(value)
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll("\"", "&quot;")
-                .replaceAll("'", "&#39;");
-        }
+                function exportExcel() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
 
-        async function apiGet(url) {
-            const response = await fetch(url);
-            const body = await response.json();
-            if (!response.ok) {
-                throw new Error(body.message || JSON.stringify(body));
-            }
-            return body;
-        }
+                    window.location.href = `/api/submissions/${employeeState.draft.submissionId}/export/excel`;
+                }
 
-        async function apiSend(url, method, payload) {
-            const response = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+                function exportPdf() {
+                    if (!employeeState.draft) {
+                        logEmployee("Please create draft first.");
+                        return;
+                    }
 
-            const body = await response.json();
-            if (!response.ok) {
-                throw new Error(body.message || JSON.stringify(body));
-            }
-            return body;
-        }
+                    window.location.href = `/api/submissions/${employeeState.draft.submissionId}/export/pdf`;
+                }
 
-        async function apiSendForm(url, method, formData) {
-            const response = await fetch(url, { method, body: formData });
-            const body = await response.json();
-            if (!response.ok) {
-                throw new Error(body.message || JSON.stringify(body));
-            }
-            return body;
-        }
+                async function loadDraftFieldValues() {
+                    if (!employeeState.draft) {
+                        employeeState.fieldValues = [];
+                        return;
+                    }
 
-        function logEmployee(value) {
-            const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
-            document.getElementById("employeeLog").textContent = text;
-        }
-    </script>
-}
+                    const allValues = await apiGet("/api/management/report-field-values");
+                    employeeState.fieldValues = allValues.filter((x) => x.submissionId === employeeState.draft.submissionId);
+                }
+
+                async function loadDraftAttachments() {
+                    if (!employeeState.draft) {
+                        employeeState.attachments = [];
+                        return;
+                    }
+
+                    employeeState.attachments = await apiGet(`/api/submissions/${employeeState.draft.submissionId}/attachments`);
+                }
+
+                function renderUserSelect(elementId, users) {
+                    const select = document.getElementById(elementId);
+                    select.innerHTML = users.map((x) =>
+                        `<option value="${x.id}">${x.employeeCode} - ${x.fullName}</option>`).join("");
+                }
+
+                function renderTemplateVersionSelect() {
+                    const select = document.getElementById("templateVersionId");
+                    const versionOptions = employeeState.versions
+                        .filter((x) => x.status === "PUBLISHED")
+                        .map((x) => {
+                            const template = employeeState.templates.find((t) => t.id === x.templateId);
+                            const templateCode = template ? template.templateCode : `Template ${x.templateId}`;
+                            return `<option value="${x.id}">${templateCode} - v${x.versionNo}</option>`;
+                        });
+
+                    select.innerHTML = versionOptions.join("");
+                }
+
+                function renderDraftSummary() {
+                    document.getElementById("draftSubmissionId").textContent = employeeState.draft ? employeeState.draft.submissionId : "-";
+                    document.getElementById("draftSubmissionNo").textContent = employeeState.draft ? employeeState.draft.submissionNo : "-";
+                    document.getElementById("draftStatus").innerHTML = employeeState.draft
+                        ? `<span class="status-pill status-${employeeState.draft.status.toLowerCase()}">${employeeState.draft.status}</span>`
+                        : "-";
+                }
+
+                function renderFieldRows() {
+                    const selectedVersionId = employeeState.draftTemplateVersionId
+                        ?? Number(document.getElementById("templateVersionId").value);
+
+                    const fields = employeeState.fields
+                        .filter((x) => x.templateVersionId === selectedVersionId)
+                        .sort((a, b) => a.displayOrder - b.displayOrder);
+
+                    const fieldValueMap = new Map(employeeState.fieldValues.map((x) => [x.fieldId, x]));
+
+                    const tbody = document.querySelector("#fieldsTable tbody");
+                    tbody.innerHTML = fields.map((field) => {
+                        const existing = fieldValueMap.get(field.id);
+                        return `
+                            <tr data-field-id="${field.id}" data-data-type="${field.dataType}">
+                                <td>${field.displayOrder}</td>
+                                <td>${field.fieldCode}</td>
+                                <td>${field.fieldLabel}</td>
+                                <td>${field.dataType}</td>
+                                <td>${field.isRequired ? "Yes" : "No"}</td>
+                                <td>${renderFieldInput(field, existing)}</td>
+                            </tr>
+                        `;
+                    }).join("");
+                }
+
+                function renderAttachmentRows() {
+                    const tbody = document.getElementById("attachmentRows");
+                    if (employeeState.attachments.length === 0) {
+                        tbody.innerHTML = "<tr><td colspan=\"5\" class=\"text-muted\">No attachment uploaded.</td></tr>";
+                        return;
+                    }
+
+                    tbody.innerHTML = employeeState.attachments.map((x) => `
+                        <tr>
+                            <td>${escapeHtml(x.fileName ?? "-")}</td>
+                            <td>${escapeHtml(x.contentType ?? "-")}</td>
+                            <td>${x.fileSizeBytes ?? 0}</td>
+                            <td>${formatDateTime(x.capturedAt)}</td>
+                            <td>${formatDateTime(x.createdAt)}</td>
+                        </tr>
+                    `).join("");
+                }
+
+                function renderFieldInput(field, existingValue) {
+                    const dataType = field.dataType;
+                    if (dataType === "NUMBER") {
+                        return `<input class="form-control" type="number" step="any" value="${existingValue?.valueNumber ?? ""}" />`;
+                    }
+                    if (dataType === "DATE") {
+                        const value = existingValue?.valueDate ?? "";
+                        return `<input class="form-control" type="date" value="${value}" />`;
+                    }
+                    if (dataType === "DATETIME") {
+                        const dateTime = existingValue?.valueDateTime ? toDateTimeLocal(existingValue.valueDateTime) : "";
+                        return `<input class="form-control" type="datetime-local" value="${dateTime}" />`;
+                    }
+                    if (dataType === "BOOLEAN") {
+                        const selected = existingValue?.valueBool;
+                        return `
+                            <select class="form-select">
+                                <option value="">-- Select --</option>
+                                <option value="true" ${selected === true ? "selected" : ""}>True</option>
+                                <option value="false" ${selected === false ? "selected" : ""}>False</option>
+                            </select>
+                        `;
+                    }
+                    return `<input class="form-control" value="${escapeHtml(existingValue?.valueText ?? "")}" />`;
+                }
+
+                function buildFieldValuePayload(row) {
+                    const fieldId = Number(row.dataset.fieldId);
+                    const dataType = row.dataset.dataType;
+                    const input = row.querySelector("input, select");
+
+                    const payload = { fieldId };
+                    if (dataType === "NUMBER") {
+                        payload.valueNumber = input.value === "" ? null : Number(input.value);
+                    } else if (dataType === "DATE") {
+                        payload.valueDate = input.value || null;
+                    } else if (dataType === "DATETIME") {
+                        payload.valueDateTime = input.value ? new Date(input.value).toISOString() : null;
+                    } else if (dataType === "BOOLEAN") {
+                        payload.valueBool = input.value === "" ? null : input.value === "true";
+                    } else {
+                        payload.valueText = input.value || null;
+                    }
+
+                    return payload;
+                }
+
+                function syncActionState() {
+                    const hasDraft = !!employeeState.draft;
+                    const status = employeeState.draft?.status ?? "";
+
+                    document.getElementById("saveFieldValuesBtn").disabled = !hasDraft || status !== "DRAFT";
+                    document.getElementById("submitDraftBtn").disabled = !hasDraft || status !== "DRAFT";
+                    document.getElementById("uploadAttachmentBtn").disabled = !hasDraft;
+                    document.getElementById("exportExcelBtn").disabled = !hasDraft;
+                    document.getElementById("exportPdfBtn").disabled = !hasDraft;
+                }
+
+                function toDateTimeLocal(isoDateTime) {
+                    const date = new Date(isoDateTime);
+                    const pad = (n) => n.toString().padStart(2, "0");
+                    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+                }
+
+                function formatDateTime(value) {
+                    if (!value) {
+                        return "-";
+                    }
+
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+                }
+
+                function escapeHtml(value) {
+                    return String(value)
+                        .replaceAll("&", "&amp;")
+                        .replaceAll("<", "&lt;")
+                        .replaceAll(">", "&gt;")
+                        .replaceAll("\"", "&quot;")
+                        .replaceAll("'", "&#39;");
+                }
+
+                async function apiGet(url) {
+                    const response = await fetch(url);
+                    const body = await response.json();
+                    if (!response.ok) {
+                        throw new Error(body.message || JSON.stringify(body));
+                    }
+                    return body;
+                }
+
+                async function apiSend(url, method, payload) {
+                    const response = await fetch(url, {
+                        method,
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const body = await response.json();
+                    if (!response.ok) {
+                        throw new Error(body.message || JSON.stringify(body));
+                    }
+                    return body;
+                }
+
+                async function apiSendForm(url, method, formData) {
+                    const response = await fetch(url, { method, body: formData });
+                    const body = await response.json();
+                    if (!response.ok) {
+                        throw new Error(body.message || JSON.stringify(body));
+                    }
+                    return body;
+                }
+
+                function logEmployee(value) {
+                    const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+                    document.getElementById("employeeLog").textContent = text;
+                }
+        </script>
+    }
