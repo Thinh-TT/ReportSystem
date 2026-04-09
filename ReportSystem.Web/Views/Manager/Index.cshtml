@@ -4,7 +4,58 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Manager Workspace</h2>
-    <span class="text-muted">Review, evaluate, approve or reject submissions</span>
+    <span class="text-muted">Review, evaluate, approve/reject, reopen, and inspect details</span>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Total</div>
+                <div class="metric-value" id="metricTotal">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Draft</div>
+                <div class="metric-value" id="metricDraft">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Submitted</div>
+                <div class="metric-value" id="metricSubmitted">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Auto Eval</div>
+                <div class="metric-value" id="metricAutoEvaluated">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Approved</div>
+                <div class="metric-value" id="metricApproved">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="text-muted small">Rejected</div>
+                <div class="metric-value" id="metricRejected">0</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="accordion mb-3" id="managerAccordion">
@@ -59,7 +110,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-3">
+<div class="card workspace-card mb-3">
     <div class="card-body">
         <h5 class="card-title">Submissions</h5>
         <div class="table-responsive">
@@ -69,7 +120,7 @@
                     <th>Select</th>
                     <th>Detail</th>
                     <th>No</th>
-                    <th>Template Version</th>
+                    <th>Template</th>
                     <th>Date</th>
                     <th>Status</th>
                     <th>Auto</th>
@@ -82,7 +133,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-3">
+<div class="card workspace-card mb-3">
     <div class="card-body">
         <h5 class="card-title">Actions</h5>
         <dl class="row mb-3">
@@ -105,13 +156,14 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="managerNote">Manager Note</label>
-                <input class="form-control" id="managerNote" />
+                <input class="form-control" id="managerNote" placeholder="Approval note or reopen reason" />
             </div>
         </div>
         <div class="d-flex flex-wrap gap-2 mt-3">
             <button class="btn btn-outline-primary" id="evaluateBtn" type="button">Auto Evaluate</button>
             <button class="btn btn-success" id="approveBtn" type="button">Approve</button>
             <button class="btn btn-danger" id="rejectBtn" type="button">Reject</button>
+            <button class="btn btn-outline-warning" id="reopenBtn" type="button">Reopen</button>
         </div>
     </div>
 </div>
@@ -154,6 +206,7 @@
             document.getElementById("evaluateBtn").addEventListener("click", autoEvaluateSelected);
             document.getElementById("approveBtn").addEventListener("click", approveSelected);
             document.getElementById("rejectBtn").addEventListener("click", rejectSelected);
+            document.getElementById("reopenBtn").addEventListener("click", reopenSelected);
         }
 
         async function initializeManagerPage() {
@@ -179,8 +232,10 @@
                 managerState.submissions = managerState.removeDraft
                     ? all.filter((x) => x.status !== "DRAFT")
                     : all;
+                renderSummaryMetrics();
                 renderSubmissionTable();
                 syncSelectedSubmissionState();
+                syncActionAvailability();
                 logManager(managerState.submissions);
             } catch (error) {
                 logManager(error.message);
@@ -201,6 +256,22 @@
             if (value && value.trim() !== "") {
                 params.append(key, value.trim());
             }
+        }
+
+        function renderSummaryMetrics() {
+            const counts = managerState.submissions.reduce((acc, item) => {
+                acc.total += 1;
+                const key = item.status || "";
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, { total: 0 });
+
+            document.getElementById("metricTotal").textContent = counts.total || 0;
+            document.getElementById("metricDraft").textContent = counts.DRAFT || 0;
+            document.getElementById("metricSubmitted").textContent = counts.SUBMITTED || 0;
+            document.getElementById("metricAutoEvaluated").textContent = counts.AUTO_EVALUATED || 0;
+            document.getElementById("metricApproved").textContent = counts.APPROVED || 0;
+            document.getElementById("metricRejected").textContent = counts.REJECTED || 0;
         }
 
         function toggleRemoveDraft() {
@@ -252,8 +323,20 @@
             return template ? template.templateName : `Template ${version.templateId}`;
         }
 
+        function statusBadge(status) {
+            if (!status) {
+                return "-";
+            }
+            return `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
+        }
+
         function renderSubmissionTable() {
             const tbody = document.querySelector("#managerSubmissionTable tbody");
+            if (managerState.submissions.length === 0) {
+                tbody.innerHTML = "<tr><td colspan=\"8\" class=\"text-muted\">No submissions found.</td></tr>";
+                return;
+            }
+
             tbody.innerHTML = managerState.submissions.map((x) => `
                 <tr>
                     <td><button class="btn btn-sm btn-outline-secondary" type="button" onclick="selectSubmission(${x.submissionId})">Select</button></td>
@@ -261,7 +344,7 @@
                     <td>${x.submissionNo}</td>
                     <td>${escapeHtml(getTemplateNameByVersionId(x.templateVersionId))}</td>
                     <td>${x.reportDate}</td>
-                    <td>${x.status}</td>
+                    <td>${statusBadge(x.status)}</td>
                     <td>${x.autoResult}</td>
                     <td>${x.managerResult}</td>
                 </tr>
@@ -271,6 +354,7 @@
         window.selectSubmission = (submissionId) => {
             managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === submissionId) || null;
             syncSelectedSubmissionState();
+            syncActionAvailability();
         };
 
         window.goToDetail = (submissionId) => {
@@ -279,7 +363,17 @@
 
         function syncSelectedSubmissionState() {
             document.getElementById("selectedSubmissionId").textContent = managerState.selectedSubmission ? managerState.selectedSubmission.submissionId : "-";
-            document.getElementById("selectedSubmissionStatus").textContent = managerState.selectedSubmission ? managerState.selectedSubmission.status : "-";
+            document.getElementById("selectedSubmissionStatus").innerHTML = managerState.selectedSubmission
+                ? statusBadge(managerState.selectedSubmission.status)
+                : "-";
+        }
+
+        function syncActionAvailability() {
+            const status = managerState.selectedSubmission?.status ?? "";
+            document.getElementById("evaluateBtn").disabled = status !== "SUBMITTED";
+            document.getElementById("approveBtn").disabled = status !== "AUTO_EVALUATED";
+            document.getElementById("rejectBtn").disabled = status !== "AUTO_EVALUATED";
+            document.getElementById("reopenBtn").disabled = !(status === "APPROVED" || status === "REJECTED");
         }
 
         async function autoEvaluateSelected() {
@@ -292,8 +386,7 @@
                 const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/evaluate`, "POST");
                 logManager(result);
                 await loadSubmissions();
-                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
-                syncSelectedSubmissionState();
+                preserveSelection(result.submissionId);
             } catch (error) {
                 logManager(error.message);
             }
@@ -314,8 +407,7 @@
                 const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/approve`, "POST", payload);
                 logManager(result);
                 await loadSubmissions();
-                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
-                syncSelectedSubmissionState();
+                preserveSelection(result.submissionId);
             } catch (error) {
                 logManager(error.message);
             }
@@ -335,11 +427,36 @@
                 const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/reject`, "POST", payload);
                 logManager(result);
                 await loadSubmissions();
-                managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === result.submissionId) || null;
-                syncSelectedSubmissionState();
+                preserveSelection(result.submissionId);
             } catch (error) {
                 logManager(error.message);
             }
+        }
+
+        async function reopenSelected() {
+            if (!managerState.selectedSubmission) {
+                logManager("Please select a submission.");
+                return;
+            }
+
+            try {
+                const payload = {
+                    actionByUserId: document.getElementById("managerActionByUserId").value,
+                    reason: document.getElementById("managerNote").value
+                };
+                const result = await apiSend(`/api/submissions/${managerState.selectedSubmission.submissionId}/reopen`, "POST", payload);
+                logManager(result);
+                await loadSubmissions();
+                preserveSelection(result.submissionId);
+            } catch (error) {
+                logManager(error.message);
+            }
+        }
+
+        function preserveSelection(submissionId) {
+            managerState.selectedSubmission = managerState.submissions.find((x) => x.submissionId === submissionId) || null;
+            syncSelectedSubmissionState();
+            syncActionAvailability();
         }
 
         async function apiGet(url) {
@@ -367,7 +484,7 @@
         }
 
         function escapeHtml(value) {
-            return value
+            return String(value)
                 .replaceAll("&", "&amp;")
                 .replaceAll("<", "&lt;")
                 .replaceAll(">", "&gt;")

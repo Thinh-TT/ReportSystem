@@ -5,13 +5,11 @@
 }
 
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm">
+    <div class="col-md-7 col-lg-5">
+        <div class="card workspace-card">
             <div class="card-body">
-                <h3 class="card-title mb-3">Sign In</h3>
-                <p class="text-muted">
-                    Use your employee code to continue.
-                </p>
+                <h3 class="card-title mb-2">Sign In</h3>
+                <p class="text-muted mb-3">Use your employee code to access role-based workspace.</p>
 
                 <form asp-action="Login" asp-controller="Account" method="post" asp-route-returnUrl="@returnUrl">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
@@ -31,11 +29,11 @@
                 </form>
 
                 <hr />
-                <div class="small text-muted">
-                    Seed users quick test:
-                    <div><code>ADMIN001</code> (ADMIN)</div>
-                    <div><code>MANAGER001</code> (MANAGER)</div>
-                    <div><code>EMPLOYEE001</code> (EMPLOYEE)</div>
+                <div class="section-title">Quick Test Users</div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm quick-login" data-code="EMPLOYEE001">EMPLOYEE001 (EMPLOYEE)</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm quick-login" data-code="MANAGER001">MANAGER001 (MANAGER)</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm quick-login" data-code="ADMIN001">ADMIN001 (ADMIN)</button>
                 </div>
             </div>
         </div>
@@ -44,4 +42,15 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const input = document.getElementById("EmployeeCode");
+            for (const button of document.querySelectorAll(".quick-login")) {
+                button.addEventListener("click", () => {
+                    input.value = button.dataset.code || "";
+                    input.focus();
+                });
+            }
+        });
+    </script>
 }

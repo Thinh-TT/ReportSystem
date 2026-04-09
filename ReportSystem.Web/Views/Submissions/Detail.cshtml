@@ -70,6 +70,7 @@
                     <th>Size</th>
                     <th>Captured At</th>
                     <th>Created At</th>
+                    <th>Action</th>
                 </tr>
                 </thead>
                 <tbody id="attachmentRows"></tbody>
@@ -138,7 +139,7 @@
             document.getElementById("submissionNo").textContent = submission.submissionNo;
             document.getElementById("templateName").textContent = template ? template.templateName : `Template Version ${submission.templateVersionId}`;
             document.getElementById("reportDate").textContent = submission.reportDate ?? "-";
-            document.getElementById("status").textContent = submission.status ?? "-";
+            document.getElementById("status").innerHTML = statusBadge(submission.status);
             document.getElementById("autoResult").textContent = submission.autoResult ?? "-";
             document.getElementById("managerResult").textContent = submission.managerResult ?? "-";
             document.getElementById("createdBy").textContent = creator ? `${creator.employeeCode} - ${creator.fullName}` : submission.createdByUserId;
@@ -170,6 +171,11 @@
 
         function renderAttachmentRows(attachments) {
             const tbody = document.getElementById("attachmentRows");
+            if (attachments.length === 0) {
+                tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-muted\">No attachment found.</td></tr>";
+                return;
+            }
+
             tbody.innerHTML = attachments.map((x) => `
                 <tr>
                     <td>${escapeHtml(x.fileName ?? "-")}</td>
@@ -177,6 +183,7 @@
                     <td>${x.fileSizeBytes ?? 0}</td>
                     <td>${formatDateTime(x.capturedAt)}</td>
                     <td>${formatDateTime(x.createdAt)}</td>
+                    <td>${renderAttachmentLink(x.filePath)}</td>
                 </tr>
             `).join("");
         }
@@ -210,6 +217,23 @@
                 return value.valueBool ? "true" : "false";
             }
             return "-";
+        }
+
+        function renderAttachmentLink(filePath) {
+            if (!filePath) {
+                return "-";
+            }
+
+            const href = `/${filePath}`;
+            return `<a class="btn btn-sm btn-outline-secondary" href="${href}" target="_blank" rel="noopener">Open</a>`;
+        }
+
+        function statusBadge(status) {
+            if (!status) {
+                return "-";
+            }
+
+            return `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
         }
 
         function formatDateTime(value) {

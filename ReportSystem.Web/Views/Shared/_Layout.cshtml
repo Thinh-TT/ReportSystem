@@ -1,61 +1,78 @@
-﻿<!DOCTYPE html>
+@using System.Security.Claims
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var roleCodes = User.Claims
+        .Where(x => x.Type == ClaimTypes.Role)
+        .Select(x => x.Value)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x)
+        .ToArray();
+    var employeeCode = User.FindFirst("employee_code")?.Value;
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ReportSystem.Web</title>
+    <title>@ViewData["Title"] - ReportSystem</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ReportSystem.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">ReportSystem.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid app-shell">
+                <a class="navbar-brand app-brand" asp-area="" asp-controller="Home" asp-action="Index">ReportSystem</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav" aria-controls="appNav"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <div id="appNav" class="navbar-collapse collapse d-lg-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                                <a class="nav-link @(currentController == "Home" ? "fw-semibold" : "text-dark")" asp-controller="Home" asp-action="Index">Home</a>
                             </li>
 
                             @if (User.IsInRole("EMPLOYEE") || User.IsInRole("ADMIN"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Employee</a>
+                                    <a class="nav-link @(currentController == "Employee" ? "fw-semibold" : "text-dark")" asp-controller="Employee" asp-action="Index">Employee</a>
                                 </li>
                             }
 
                             @if (User.IsInRole("MANAGER") || User.IsInRole("ADMIN"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Manager" asp-action="Index">Manager</a>
+                                    <a class="nav-link @(currentController == "Manager" || currentController == "Submissions" ? "fw-semibold" : "text-dark")" asp-controller="Manager" asp-action="Index">Manager</a>
                                 </li>
                             }
 
                             @if (User.IsInRole("ADMIN"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Admin</a>
+                                    <a class="nav-link @(currentController == "Admin" ? "fw-semibold" : "text-dark")" asp-controller="Admin" asp-action="Index">Admin</a>
                                 </li>
                             }
-
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                            </li>
                         }
                     </ul>
-                    <ul class="navbar-nav">
+
+                    <ul class="navbar-nav align-items-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item d-flex align-items-center me-2 text-muted small">
-                                @User.Identity.Name
+                            <li class="nav-item me-2">
+                                <div class="small text-muted text-end">
+                                    <div class="fw-semibold text-dark">@User.Identity.Name</div>
+                                    <div>@employeeCode</div>
+                                </div>
+                            </li>
+                            <li class="nav-item me-2 d-flex flex-wrap gap-1">
+                                @foreach (var role in roleCodes)
+                                {
+                                    <span class="role-pill">@role</span>
+                                }
                             </li>
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
@@ -66,7 +83,7 @@
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                                <a class="btn btn-sm btn-primary" asp-controller="Account" asp-action="Login">Login</a>
                             </li>
                         }
                     </ul>
@@ -74,17 +91,19 @@
             </div>
         </nav>
     </header>
-    <div class="container">
+
+    <div class="container app-shell">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
     <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ReportSystem.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        <div class="container app-shell">
+            &copy; 2026 - ReportSystem
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
